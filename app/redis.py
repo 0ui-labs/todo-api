@@ -1,5 +1,7 @@
 """Redis connection pool configuration and management."""
 
+import re
+
 import redis.asyncio as redis
 from redis.asyncio.connection import ConnectionPool
 
@@ -18,13 +20,14 @@ def get_redis_pool(db: int = 0) -> ConnectionPool:
     Returns:
         ConnectionPool instance configured for production use
     """
+    if not (0 <= db <= 15):
+        raise ValueError(f"Redis database number must be 0-15, got {db}")
+
     if db not in _connection_pools:
         # Parse base URL without DB number
         base_url = settings.redis_url
-        if base_url.endswith(("/0", "/1", "/2", "/3", "/4", "/5", "/6", "/7",
-                             "/8", "/9", "/10", "/11", "/12", "/13", "/14", "/15")):
-            # Remove existing DB number
-            base_url = base_url.rsplit("/", 1)[0]
+        # Remove existing DB number using regex for more robust parsing
+        base_url = re.sub(r'/\d+$', '', base_url)
 
         # Create pool with production-ready settings
         _connection_pools[db] = redis.ConnectionPool.from_url(
