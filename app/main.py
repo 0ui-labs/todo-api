@@ -15,6 +15,9 @@ from app.middleware.error_handler import ErrorHandlerMiddleware
 from app.middleware.logging import LoggingMiddleware
 from app.middleware.rate_limit import limiter, setup_rate_limiting
 from app.middleware.security import SecurityHeadersMiddleware
+from app.middleware.monitoring import MonitoringMiddleware
+from app.monitoring.telemetry import setup_telemetry, instrument_app
+from prometheus_client import make_asgi_app
 
 # Configure logging
 logging.basicConfig(
@@ -28,7 +31,19 @@ logger = logging.getLogger(__name__)
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Handle application lifecycle events."""
     logger.info("Starting up Todo API...")
+    
+    # Setup OpenTelemetry
+    setup_telemetry(
+        service_name="todo-api",
+        service_version="1.0.0",
+        otlp_endpoint=settings.otlp_endpoint if hasattr(settings, 'otlp_endpoint') else None
+    )
+    
+    # Instrument the application
+    instrument_app(app, engine.sync_engine)
+    
     yield
+    
     logger.info("Shutting down Todo API...")
     await engine.dispose()
 
@@ -59,6 +74,7 @@ app.add_middleware(
 
 # Add custom middleware (order matters - error handler should be first)
 app.add_middleware(ErrorHandlerMiddleware)
+app.add_middleware(MonitoringMiddleware)  # Add monitoring middleware
 app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(AuthMiddleware)
 app.add_middleware(LoggingMiddleware)
@@ -117,3 +133,8 @@ async def health_check() -> dict[str, str]:
 async def test_rate_limit(request: Request) -> dict[str, str]:
     """Test endpoint for Rate Limiting with 5/minute."""
     return {"message": "Request successful", "limit": "5/minute"}
+
+
+# Prometheus metrics endpoint
+metrics_app = make_asgi_app()
+app.mount("/metrics", metrics_app)

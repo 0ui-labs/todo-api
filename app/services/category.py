@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.category import Category
 from app.schemas.category import CategoryCreate, CategoryUpdate
+from app.utils.cache import cache_result, invalidate_cache
 
 
 class CategoryService:
@@ -16,6 +17,7 @@ class CategoryService:
         """Initialize the service with database session."""
         self.db = db
 
+    @invalidate_cache("categories", pattern="user:{user_id}:*")
     async def create_category(
         self,
         user_id: UUID,
@@ -39,6 +41,7 @@ class CategoryService:
                 raise ValueError("A category with this name already exists") from e
             raise
 
+    @cache_result("categories", ttl=300)
     async def get_category(
         self,
         category_id: UUID,
@@ -54,6 +57,7 @@ class CategoryService:
         result = await self.db.execute(query)
         return result.scalar_one_or_none()
 
+    @cache_result("categories", ttl=300)
     async def get_categories(
         self,
         user_id: UUID,
@@ -93,6 +97,7 @@ class CategoryService:
 
         return list(categories), total
 
+    @invalidate_cache("categories", pattern="user:{user_id}:*")
     async def update_category(
         self,
         category_id: UUID,
@@ -120,6 +125,8 @@ class CategoryService:
                 raise ValueError("A category with this name already exists") from e
             raise
 
+    @invalidate_cache("categories", pattern="user:{user_id}:*")
+    @invalidate_cache("todos", pattern="user:{user_id}:*")  # Also invalidate todos since category deletion affects them
     async def delete_category(
         self,
         category_id: UUID,

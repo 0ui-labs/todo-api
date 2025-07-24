@@ -13,6 +13,7 @@ from app.utils.security import (
     get_password_hash,
     verify_password,
 )
+from app.monitoring.metrics import users_registered_total, users_login_total
 
 
 class AuthService:
@@ -43,6 +44,9 @@ class AuthService:
         self.db.add(user)
         await self.db.commit()
         await self.db.refresh(user)
+        
+        # Track metric
+        users_registered_total.inc()
 
         return user
 
@@ -57,14 +61,18 @@ class AuthService:
         user = result.scalar_one_or_none()
 
         if not user:
+            users_login_total.labels(status="failure").inc()
             return None
 
         if not verify_password(password, user.password_hash):
+            users_login_total.labels(status="failure").inc()
             return None
 
         if not user.is_active:
+            users_login_total.labels(status="failure").inc()
             return None
 
+        users_login_total.labels(status="success").inc()
         return user
 
     async def create_user_token(self, user_id: UUID) -> tuple[str, int]:

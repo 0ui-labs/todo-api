@@ -10,6 +10,8 @@ from app.models.todo import Todo, TodoStatus
 from app.schemas.todo import TodoCreate, TodoFilter, TodoSort, TodoUpdate
 from app.services.category import CategoryService
 from app.services.tag import TagService
+from app.utils.cache import cache_result, invalidate_cache
+from app.monitoring.metrics import todos_created_total, todos_completed_total, todos_deleted_total
 
 
 class TodoService:
@@ -19,6 +21,7 @@ class TodoService:
         """Initialize the service with database session."""
         self.db = db
 
+    @invalidate_cache("todos", pattern="user:{user_id}:*")
     async def create_todo(self, user_id: UUID, todo_data: TodoCreate) -> Todo | None:
         """Create a new todo."""
         # NEW: Validate category if provided
@@ -54,9 +57,13 @@ class TodoService:
         self.db.add(todo)
         await self.db.commit()
 
+        # Track metric
+        todos_created_total.inc()
+
         # NEW: Return with eager loaded data
         return await self.get_todo(todo.id, user_id)
 
+    @cache_result("todos", ttl=300)
     async def get_todo(self, todo_id: UUID, user_id: UUID) -> Todo | None:
         """Get a specific todo by ID."""
         query = (
@@ -74,6 +81,7 @@ class TodoService:
         result = await self.db.execute(query)
         return result.scalar_one_or_none()
 
+    @cache_result("todos", ttl=300)
     async def get_todos(
         self,
         user_id: UUID,
@@ -135,6 +143,7 @@ class TodoService:
 
         return list(todos), total
 
+    @invalidate_cache("todos", pattern="user:{user_id}:*")
     async def update_todo(
         self,
         todo_id: UUID,
@@ -154,6 +163,7 @@ class TodoService:
         # Handle status change to completed
         if update_data.get("status") == TodoStatus.COMPLETED and not todo.completed_at:
             update_data["completed_at"] = datetime.now()
+            todos_completed_total.inc()  # Track completion
         elif update_data.get("status") != TodoStatus.COMPLETED:
             update_data["completed_at"] = None
 
@@ -173,6 +183,7 @@ class TodoService:
         refreshed_todo = await self.get_todo(todo_id, user_id)
         return refreshed_todo
 
+    @invalidate_cache("todos", pattern="user:{user_id}:*")
     async def delete_todo(self, todo_id: UUID, user_id: UUID) -> bool:
         """Soft delete a todo."""
         todo = await self.get_todo(todo_id, user_id)
@@ -181,8 +192,13 @@ class TodoService:
 
         todo.deleted_at = datetime.now()
         await self.db.commit()
+        
+        # Track metric
+        todos_deleted_total.inc()
+        
         return True
 
+    @cache_result("todos", ttl=300)
     async def get_todos_by_category(
         self,
         user_id: UUID,
