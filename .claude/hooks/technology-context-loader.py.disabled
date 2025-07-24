@@ -1,0 +1,216 @@
+#!/usr/bin/env python3
+"""
+Technology Context Loader Hook for Claude Code
+Analyzes tasks to detect required technologies and automatically instructs 
+Claude to load relevant documentation from Context7 MCP server.
+"""
+
+import sys
+from typing import Dict, List, Set, Tuple
+
+# Technology detection patterns
+TECHNOLOGY_PATTERNS = {
+    # FastAPI/API Development
+    "fastapi": {
+        "keywords": ["fastapi", "api", "endpoint", "route", "rest", "swagger", "openapi"],
+        "library_id": "/tiangolo/fastapi",
+        "topics": ["routing", "middleware", "dependencies", "authentication"]
+    },
+    
+    # SQLAlchemy/Database
+    "sqlalchemy": {
+        "keywords": ["sqlalchemy", "orm", "database", "model", "query", "migration", "alembic"],
+        "library_id": "/sqlalchemy/sqlalchemy",
+        "topics": ["orm", "queries", "relationships", "migrations"]
+    },
+    
+    # PostgreSQL
+    "postgresql": {
+        "keywords": ["postgresql", "postgres", "psql", "pg"],
+        "library_id": "/postgresql/postgresql",
+        "topics": ["queries", "indexes", "performance", "json"]
+    },
+    
+    # Redis
+    "redis": {
+        "keywords": ["redis", "cache", "caching", "rate limit"],
+        "library_id": "/redis/redis", 
+        "topics": ["caching", "pub-sub", "data-structures"]
+    },
+    
+    # Pydantic
+    "pydantic": {
+        "keywords": ["pydantic", "validation", "schema", "model validation"],
+        "library_id": "/pydantic/pydantic",
+        "topics": ["models", "validation", "serialization", "settings"]
+    },
+    
+    # pytest
+    "pytest": {
+        "keywords": ["pytest", "test", "testing", "unit test", "fixture", "mock"],
+        "library_id": "/pytest-dev/pytest",
+        "topics": ["fixtures", "parametrize", "mocking", "async-testing"]
+    },
+    
+    # JWT/Authentication
+    "jwt": {
+        "keywords": ["jwt", "token", "authentication", "auth", "bearer"],
+        "library_id": "/python-jose/python-jose",
+        "topics": ["jwt", "encoding", "decoding", "validation"]
+    },
+    
+    # Python standard library
+    "python": {
+        "keywords": ["asyncio", "typing", "dataclass", "enum", "logging", "json"],
+        "library_id": "/python/cpython",
+        "topics": ["asyncio", "typing", "dataclasses", "logging"]
+    }
+}
+
+# Task type classification
+PROGRAMMING_INDICATORS = {
+    "implement", "code", "develop", "fix", "debug", "refactor",
+    "create function", "add method", "write test", "update api",
+    "integrate", "optimize", "enhance"
+}
+
+PLANNING_INDICATORS = {
+    "plan", "design", "architect", "structure", "analyze",
+    "requirement", "specification", "document", "diagram",
+    "strategy", "approach", "evaluate"
+}
+
+def classify_task_type(task_description: str) -> str:
+    """
+    Classify whether the task is programming or planning focused.
+    
+    Returns:
+        'programming', 'planning', or 'mixed'
+    """
+    task_lower = task_description.lower()
+    
+    has_programming = any(indicator in task_lower for indicator in PROGRAMMING_INDICATORS)
+    has_planning = any(indicator in task_lower for indicator in PLANNING_INDICATORS)
+    
+    if has_programming and has_planning:
+        return "mixed"
+    elif has_programming:
+        return "programming"
+    elif has_planning:
+        return "planning"
+    else:
+        # Default to programming if unclear
+        return "programming"
+
+def detect_technologies(task_description: str) -> List[Tuple[str, Dict]]:
+    """
+    Detect which technologies are mentioned or implied in the task.
+    
+    Returns:
+        List of tuples (technology_name, technology_config)
+    """
+    task_lower = task_description.lower()
+    detected = []
+    
+    # Check each technology pattern
+    for tech_name, tech_config in TECHNOLOGY_PATTERNS.items():
+        if any(keyword in task_lower for keyword in tech_config["keywords"]):
+            detected.append((tech_name, tech_config))
+    
+    # Special detection rules
+    if "api" in task_lower or "endpoint" in task_lower:
+        # Likely needs FastAPI
+        if not any(t[0] == "fastapi" for t in detected):
+            detected.append(("fastapi", TECHNOLOGY_PATTERNS["fastapi"]))
+    
+    if "test" in task_lower:
+        # Likely needs pytest
+        if not any(t[0] == "pytest" for t in detected):
+            detected.append(("pytest", TECHNOLOGY_PATTERNS["pytest"]))
+    
+    return detected
+
+def generate_context7_instructions(task_type: str, technologies: List[Tuple[str, Dict]]) -> str:
+    """
+    Generate instructions for Claude to load Context7 documentation.
+    """
+    if not technologies and task_type != "planning":
+        return ""
+    
+    instructions = []
+    
+    # Header based on task type
+    if task_type == "programming":
+        header = "🔧 PROGRAMMING TASK DETECTED - Loading technical documentation:\n"
+    elif task_type == "planning":
+        header = "📋 PLANNING TASK DETECTED - May need technical context:\n"
+    else:
+        header = "🔀 MIXED TASK DETECTED - Loading relevant documentation:\n"
+    
+    instructions.append(header)
+    
+    # Add technology-specific instructions
+    for tech_name, tech_config in technologies:
+        lib_id = tech_config.get("library_id", "")
+        topics = tech_config.get("topics", [])
+        
+        if lib_id:
+            # Determine relevant topics based on task
+            relevant_topics = []
+            task_lower = task_type.lower()
+            
+            # Smart topic selection based on task content
+            if "auth" in task_lower or "security" in task_lower:
+                relevant_topics = [t for t in topics if "auth" in t or "security" in t]
+            elif "test" in task_lower:
+                relevant_topics = [t for t in topics if "test" in t or "mock" in t]
+            elif "performance" in task_lower or "optimize" in task_lower:
+                relevant_topics = [t for t in topics if "performance" in t or "index" in t]
+            
+            # Default to first 2 topics if no specific match
+            if not relevant_topics:
+                relevant_topics = topics[:2]
+            
+            instruction = f"📚 {tech_name.upper()}: Please consult Context7 documentation\n"
+            instruction += f"   - Library: `{lib_id}`\n"
+            if relevant_topics:
+                instruction += f"   - Focus on: {', '.join(relevant_topics)}\n"
+            
+            instructions.append(instruction)
+    
+    if len(instructions) > 1:  # More than just header
+        instructions.append("\nUse the mcp__context7__get-library-docs tool to load the relevant sections before proceeding with implementation.")
+        instructions.append("This ensures you have the latest API references and best practices.")
+        return "\n".join(instructions)
+    
+    return ""
+
+def main():
+    """Main entry point for the hook."""
+    # Read task from stdin or command line
+    if len(sys.argv) > 1:
+        task = " ".join(sys.argv[1:])
+    else:
+        task = sys.stdin.read().strip()
+    
+    if not task:
+        return
+    
+    # Classify task type
+    task_type = classify_task_type(task)
+    
+    # Detect technologies
+    technologies = detect_technologies(task)
+    
+    # Generate Context7 instructions
+    context_instructions = generate_context7_instructions(task_type, technologies)
+    
+    if context_instructions:
+        print(context_instructions)
+        print("-" * 60)
+    
+    # Always output the original task
+    print(task)
+
+if __name__ == "__main__":
+    main()

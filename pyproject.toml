@@ -1,0 +1,95 @@
+[project]
+name = "todo-api"
+version = "0.1.0"
+description = "Simple Todo List Web API"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.109.0",
+    "uvicorn[standard]>=0.27.0",
+    "sqlalchemy>=2.0.25",
+    "asyncpg>=0.29.0",
+    "alembic>=1.13.1",
+    "pydantic[email]>=2.5.3",
+    "pydantic-settings>=2.1.0",
+    "python-jose[cryptography]>=3.3.0",
+    "passlib[bcrypt]>=1.7.4",
+    "python-multipart>=0.0.6",
+    "redis>=5.0.1",
+    "httpx>=0.26.0",
+    "pytest>=7.4.4",
+    "pytest-asyncio>=0.23.3",
+    "pytest-cov>=4.1.0",
+    "ruff>=0.1.14",
+    "mypy>=1.8.0",
+    "slowapi>=0.1.9",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["app"]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 88
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W", "B", "C90", "UP"]
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+ignore_missing_imports = true
+no_implicit_reexport = true
+strict_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+
+# Test-spezifische Overrides hinzufügen:
+[[tool.mypy.overrides]]
+module = "tests.*"
+# Lockere Regeln für Tests:
+disallow_untyped_defs = false  # Erlaube untyped test functions
+disallow_untyped_decorators = false  # Für pytest fixtures
+warn_return_any = false  # Mock returns sind oft Any
+no_implicit_reexport = false  # Tests re-exportieren oft
+
+# Spezifische Test-Module mit noch lockereren Regeln:
+[[tool.mypy.overrides]]
+module = "tests.conftest"
+ignore_errors = true  # Conftest hat oft komplexe Fixture-Typen
+
+# Für Mock-Heavy Tests:
+[[tool.mypy.overrides]]
+module = [
+    "tests.unit.test_auth_service",
+    "tests.unit.test_todo_service"
+]
+allow_untyped_calls = true  # Mock calls sind oft untyped
+allow_untyped_decorators = true  # Für @patch decorators
+
+# Externe Test-Dependencies:
+[[tool.mypy.overrides]]
+module = [
+    "pytest",
+    "pytest_asyncio",
+    "httpx",
+    "faker"
+]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py", "*_test.py"]
+addopts = "--strict-markers --tb=short"
+
+[dependency-groups]
+dev = [
+    "types-passlib>=1.7.7.20250602",
+    "types-python-jose>=3.5.0.20250531",
+]
