@@ -1,0 +1,33 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    monitor: 'todo-api-monitor'
+
+# Alertmanager configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: []
+
+# Load rules once and periodically evaluate them
+rule_files:
+  - "alerts.yml"
+
+# Scrape configurations
+scrape_configs:
+  # The job name is added as a label `job=<job_name>` to any timeseries scraped from this config
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # Todo API metrics
+  - job_name: 'todo-api'
+    static_configs:
+      - targets: ['host.docker.internal:8000']  # Use host.docker.internal on Mac/Windows
+        labels:
+          service: 'todo-api'
+          environment: 'development'
+    metrics_path: '/metrics'
+    scrape_interval: 15s
+    scrape_timeout: 10s

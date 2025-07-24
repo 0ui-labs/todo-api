@@ -1,0 +1,115 @@
+groups:
+  - name: todo-api-alerts
+    interval: 30s
+    rules:
+      # High error rate alert
+      - alert: HighErrorRate
+        expr: |
+          (
+            sum(rate(http_requests_total{job="todo-api",status=~"5.."}[5m]))
+            /
+            sum(rate(http_requests_total{job="todo-api"}[5m]))
+          ) > 0.05
+        for: 5m
+        labels:
+          severity: critical
+          service: todo-api
+        annotations:
+          summary: "High error rate detected (>5%)"
+          description: "Error rate is {{ $value | humanizePercentage }} for the last 5 minutes"
+
+      # High response time alert
+      - alert: HighResponseTime
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(http_request_duration_seconds_bucket{job="todo-api"}[5m])) by (le, endpoint)
+          ) > 1
+        for: 5m
+        labels:
+          severity: warning
+          service: todo-api
+        annotations:
+          summary: "High response time detected"
+          description: "95th percentile response time is {{ $value }}s for endpoint {{ $labels.endpoint }}"
+
+      # Database slow queries
+      - alert: DatabaseSlowQueries
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(db_query_duration_seconds_bucket{job="todo-api"}[5m])) by (le, operation, table)
+          ) > 1
+        for: 5m
+        labels:
+          severity: warning
+          service: todo-api
+        annotations:
+          summary: "Slow database queries detected"
+          description: "95th percentile query time is {{ $value }}s for {{ $labels.operation }} on {{ $labels.table }}"
+
+      # Low cache hit rate
+      - alert: LowCacheHitRate
+        expr: |
+          (
+            sum(rate(cache_hits_total{job="todo-api"}[5m])) by (namespace)
+            /
+            (sum(rate(cache_hits_total{job="todo-api"}[5m])) by (namespace) + 
+             sum(rate(cache_misses_total{job="todo-api"}[5m])) by (namespace))
+          ) < 0.8
+        for: 10m
+        labels:
+          severity: warning
+          service: todo-api
+        annotations:
+          summary: "Low cache hit rate"
+          description: "Cache hit rate is {{ $value | humanizePercentage }} for namespace {{ $labels.namespace }}"
+
+      # Rate limit exceeded
+      - alert: HighRateLimitViolations
+        expr: |
+          sum(rate(rate_limit_exceeded_total{job="todo-api"}[5m])) by (endpoint) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+          service: todo-api
+        annotations:
+          summary: "High rate limit violations"
+          description: "{{ $value }} rate limit violations per second on endpoint {{ $labels.endpoint }}"
+
+      # Failed login attempts
+      - alert: HighFailedLoginAttempts
+        expr: |
+          sum(rate(users_login_total{job="todo-api",status="failure"}[5m])) > 1
+        for: 5m
+        labels:
+          severity: warning
+          service: todo-api
+        annotations:
+          summary: "High number of failed login attempts"
+          description: "{{ $value }} failed login attempts per second"
+
+      # Database connection pool exhaustion
+      - alert: DatabaseConnectionPoolExhaustion
+        expr: |
+          (
+            db_connections_active{job="todo-api"}
+            /
+            (db_connections_active{job="todo-api"} + db_connections_idle{job="todo-api"})
+          ) > 0.9
+        for: 5m
+        labels:
+          severity: critical
+          service: todo-api
+        annotations:
+          summary: "Database connection pool near exhaustion"
+          description: "{{ $value | humanizePercentage }} of database connections are in use"
+
+      # No data received (service down)
+      - alert: TodoAPIDown
+        expr: up{job="todo-api"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: todo-api
+        annotations:
+          summary: "Todo API is down"
+          description: "Todo API has been down for more than 1 minute"

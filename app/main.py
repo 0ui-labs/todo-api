@@ -20,12 +20,16 @@ from app.monitoring.telemetry import setup_telemetry, instrument_app
 from app.redis import close_redis_pools
 from prometheus_client import make_asgi_app
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+# Configure structured logging
+from app.monitoring.logging_config import setup_logging, get_logger
+
+# Setup logging before anything else
+setup_logging(
+    level=settings.log_level if hasattr(settings, 'log_level') else "INFO",
+    json_logs=settings.json_logs if hasattr(settings, 'json_logs') else True,
+    service_name=settings.app_name
 )
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 @asynccontextmanager
@@ -42,6 +46,10 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     
     # Instrument the application
     instrument_app(app, engine.sync_engine)
+    
+    # Setup database metrics collection
+    from app.monitoring.db_metrics import setup_db_metrics
+    setup_db_metrics(engine)
     
     yield
     

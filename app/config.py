@@ -58,6 +58,11 @@ class Settings(BaseSettings):
     rate_limit_key_prefix: str = "todo_api"  # Redis key prefix
     rate_limit_auth_per_minute: int = 5
     rate_limit_auth_per_hour: int = 20
+    
+    # Monitoring and observability settings
+    otlp_endpoint: str | None = Field(default=None, description="OpenTelemetry collector endpoint")
+    json_logs: bool = Field(default=True, description="Enable JSON structured logging")
+    log_level: str = Field(default="INFO", description="Logging level")
 
     @field_validator("secret_key", mode="after")
     @classmethod

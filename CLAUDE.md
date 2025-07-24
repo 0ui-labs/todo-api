@@ -149,6 +149,7 @@ pytest tests/ -v --cov=app --cov-report=html
 For more detailed information, see:
 - **[Python Development Guide](docs/PYTHON-GUIDE.md)** - Coding standards, patterns, and best practices
 - **[PRP Framework](docs/PRP-FRAMEWORK.md)** - Product Requirement Prompt methodology
+- **[Monitoring Guide](docs/MONITORING.md)** - Monitoring, metrics, and observability setup
 - **[API Documentation](http://localhost:8000/docs)** - Interactive Swagger UI (when server is running)
 
 ## Important Notes
