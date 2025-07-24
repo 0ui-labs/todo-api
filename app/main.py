@@ -10,7 +10,6 @@ from slowapi.middleware import SlowAPIMiddleware
 from app.api import admin, auth, categories, tags, todos
 from app.config import settings
 from app.database import engine
-from app.middleware.auth import AuthMiddleware
 from app.middleware.error_handler import ErrorHandlerMiddleware
 from app.middleware.logging import LoggingMiddleware
 from app.middleware.monitoring import MonitoringMiddleware
@@ -106,7 +105,6 @@ app.add_middleware(
 app.add_middleware(ErrorHandlerMiddleware)
 app.add_middleware(MonitoringMiddleware)  # Add monitoring middleware
 app.add_middleware(SecurityHeadersMiddleware)
-app.add_middleware(AuthMiddleware)
 app.add_middleware(LoggingMiddleware)
 
 # Add SlowAPI middleware (must be after other middleware)
