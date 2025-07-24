@@ -4,36 +4,17 @@ Generate a comprehensive task list for focused changes with validation.
 
 ## Task: $ARGUMENTS
 
-## 🚨 MANDATORY PRE-TASK ANALYSIS REQUIRED 🚨
+## 🚨 MANDATORY: Load Project Guides First 🚨
 
-**⚠️ IMPORTANT: Complete ALL steps below BEFORE starting the task!**
-
-### 📌 REQUIRED ANALYSIS STEPS:
-
-1. **ANALYZE** the task to identify:
-   - Technologies/frameworks mentioned or implied
-   - Task type (planning/documentation for TASK PRP)
-   - Required documentation for research
-
-2. **LIST AND JUSTIFY** documentation needs:
-   - Technology Docs with reasons
-   - Project Guides (PRP-FRAMEWORK.md) with reasons
-   - Memory files needed
-
-3. **LOAD Ref documentation**:
-   - Use `mcp__Ref__ref_search_documentation` to search
-   - Use `mcp__Ref__ref_read_url` to read URLs
-   - Be specific in search queries
-
-4. **LOAD project guides**:
-   - Read docs/PRP-FRAMEWORK.md (required for PRP creation)
-   - Read docs/PYTHON-GUIDE.md if implementation-related
-
-5. **ONLY AFTER** completing analysis, proceed with TASK PRP creation
+**Before starting, load essential project documentation:**
+- Read docs/PRP-FRAMEWORK.md (required for PRP creation)
+- Read docs/PYTHON-GUIDE.md (for implementation standards)
 
 ---
 
 ## Analysis Process
+
+**⚠️ Any external research MUST use Ref MCP Server - do NOT use other web search tools**
 
 1. **Scope Definition**
    - Identify all affected files
@@ -42,10 +23,13 @@ Generate a comprehensive task list for focused changes with validation.
    - Note test coverage
 
 2. **Pattern Research**
-   - Find similar changes in history
-   - Identify conventions to follow
-   - Check for helper functions
-   - Review test patterns
+   - Find similar changes in history (codebase)
+   - Identify conventions to follow (codebase)
+   - Check for helper functions (codebase)
+   - Review test patterns (codebase)
+   - If external documentation needed, use Ref:
+     - `mcp__Ref__ref_search_documentation("[pattern/library] documentation")`
+     - `mcp__Ref__ref_read_url` for reading docs
 
 3. **User Clarification**
    - Confirm change scope

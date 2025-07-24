@@ -4,36 +4,17 @@ Generate a comprehensive specification-driven PRP with clear transformation goal
 
 ## Specification: $ARGUMENTS
 
-## 🚨 MANDATORY PRE-TASK ANALYSIS REQUIRED 🚨
+## 🚨 MANDATORY: Load Project Guides First 🚨
 
-**⚠️ IMPORTANT: Complete ALL steps below BEFORE starting the task!**
-
-### 📌 REQUIRED ANALYSIS STEPS:
-
-1. **ANALYZE** the specification to identify:
-   - Technologies/frameworks mentioned or implied
-   - Task type (planning/documentation for SPEC PRP)
-   - Required documentation for research
-
-2. **LIST AND JUSTIFY** documentation needs:
-   - Technology Docs with reasons
-   - Project Guides (PRP-FRAMEWORK.md) with reasons
-   - Memory files needed
-
-3. **LOAD Ref documentation**:
-   - Use `mcp__Ref__ref_search_documentation` to search
-   - Use `mcp__Ref__ref_read_url` to read URLs
-   - Search for best practices, migration strategies
-
-4. **LOAD project guides**:
-   - Read docs/PRP-FRAMEWORK.md (required for PRP creation)
-   - Read docs/PYTHON-GUIDE.md if implementation-related
-
-5. **ONLY AFTER** completing analysis, proceed with SPEC PRP creation
+**Before starting, load essential project documentation:**
+- Read docs/PRP-FRAMEWORK.md (required for PRP creation)
+- Read docs/PYTHON-GUIDE.md (for implementation standards)
 
 ---
 
 ## Analysis Process
+
+**⚠️ All external research MUST use Ref MCP Server - do NOT use other web search tools**
 
 1. **Current State Assessment**
    - Map existing implementation
@@ -41,12 +22,13 @@ Generate a comprehensive specification-driven PRP with clear transformation goal
    - Document technical debt
    - Note integration points
 
-2. **Desired State Research**
-   - Best practices for target state
-   - Implementation examples
-   - Migration strategies
-   - Risk assessment
-   - Dependency mapping
+2. **Desired State Research (using Ref MCP Server)**
+   - Use Ref for all external research:
+     - Best practices: `mcp__Ref__ref_search_documentation("[technology] best practices architecture")`
+     - Implementation examples: `mcp__Ref__ref_search_documentation("[feature] implementation examples github")`
+     - Migration strategies: `mcp__Ref__ref_search_documentation("[from tech] to [to tech] migration guide")`
+   - Risk assessment (analyze findings from Ref searches)
+   - Dependency mapping (based on documentation found via Ref)
 
 3. **User Clarification**
    - Confirm transformation goals

@@ -2,32 +2,11 @@
 
 ## Feature: $ARGUMENTS
 
-## 🚨 MANDATORY PRE-TASK ANALYSIS REQUIRED 🚨
+## 🚨 MANDATORY: Load Project Guides First 🚨
 
-**⚠️ IMPORTANT: Complete ALL steps below BEFORE starting the task!**
-
-### 📌 REQUIRED ANALYSIS STEPS:
-
-1. **ANALYZE** the feature request to identify:
-   - Technologies/frameworks mentioned or implied
-   - Task type (always planning/documentation for PRP creation)
-   - Required documentation for research
-
-2. **LIST AND JUSTIFY** documentation needs:
-   - Technology Docs with reasons
-   - Project Guides (PRP-FRAMEWORK.md) with reasons
-   - Memory files needed
-
-3. **LOAD Ref documentation**:
-   - Use `mcp__Ref__ref_search_documentation` to search
-   - Use `mcp__Ref__ref_read_url` to read URLs
-   - Be specific in search queries
-
-4. **LOAD project guides**:
-   - Read docs/PRP-FRAMEWORK.md (required for PRP creation)
-   - Read docs/PYTHON-GUIDE.md if implementation-related
-
-5. **ONLY AFTER** completing analysis, proceed with PRP creation
+**Before starting, load essential project documentation:**
+- Read docs/PRP-FRAMEWORK.md (required for PRP creation)
+- Read docs/PYTHON-GUIDE.md (for implementation standards)
 
 ---
 
@@ -39,6 +18,11 @@ The AI agent only gets the context you are appending to the PRP and its own trai
 
 > During the research process, create clear tasks and spawn as many agents and subagents as needed using the batch tools. The deeper research we do here the better the PRP will be. we optminize for chance of success and not for speed.
 
+**⚠️ IMPORTANT: All external documentation searches MUST use Ref MCP Server:**
+- Use `mcp__Ref__ref_search_documentation` for searching
+- Use `mcp__Ref__ref_read_url` for reading documentation
+- Do NOT use other web search tools
+
 1. **Codebase Analysis in depth**
    - Create clear todos and spawn subagents to search the codebase for similar features/patterns Think hard and plan your approach
    - Identify all the necessary files to reference in the PRP
@@ -46,13 +30,15 @@ The AI agent only gets the context you are appending to the PRP and its own trai
    - Check existing test patterns for validation approach
    - Use the batch tools to spawn subagents to search the codebase for similar features/patterns
 
-2. **External Research at scale**
-   - Create clear todos and spawn with instructions subagents to do deep research for similar features/patterns online and include urls to documentation and examples
-   - Library documentation (include specific URLs)
-   - For critical pieces of documentation add a .md file to PRPs/ai_docs and reference it in the PRP with clear reasoning and instructions
-   - Implementation examples (GitHub/StackOverflow/blogs)
-   - Best practices and common pitfalls found during research
-   - Use the batch tools to spawn subagents to search for similar features/patterns online and include urls to documentation and examples
+2. **External Research at scale (using Ref MCP Server)**
+   - Create clear todos and spawn subagents with instructions to research using Ref:
+     - Use `mcp__Ref__ref_search_documentation` for finding relevant documentation
+     - Use `mcp__Ref__ref_read_url` to read specific documentation pages
+   - Library documentation (search with Ref and include specific URLs)
+   - For critical pieces of documentation add a .md file to PRPs/ai_docs and reference it in the PRP
+   - Implementation examples (search GitHub/StackOverflow/blogs via Ref)
+   - Best practices and common pitfalls (search via Ref)
+   - Use batch tools to spawn subagents that use Ref for all external searches
 
 3. **User Clarification**
    - Ask for clarification if you need it

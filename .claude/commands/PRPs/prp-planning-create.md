@@ -4,49 +4,31 @@ Transform rough ideas into comprehensive PRDs with rich visual documentation.
 
 ## Idea: $ARGUMENTS
 
-## 🚨 MANDATORY PRE-TASK ANALYSIS REQUIRED 🚨
+## 🚨 MANDATORY: Load Project Guides First 🚨
 
-**⚠️ IMPORTANT: Complete ALL steps below BEFORE starting the task!**
-
-### 📌 REQUIRED ANALYSIS STEPS:
-
-1. **ANALYZE** the idea/request to identify:
-   - Technologies/frameworks mentioned or implied
-   - Task type (planning/documentation/research)
-   - Required documentation for research
-
-2. **LIST AND JUSTIFY** documentation needs:
-   - Technology Docs with reasons
-   - Project Guides (PRP-FRAMEWORK.md) with reasons
-   - Memory files needed
-
-3. **LOAD Ref documentation**:
-   - Use `mcp__Ref__ref_search_documentation` to search
-   - Use `mcp__Ref__ref_read_url` to read URLs
-   - Search for market analysis, best practices, etc.
-
-4. **LOAD project guides**:
-   - Read docs/PRP-FRAMEWORK.md (required for PRP creation)
-   - Read relevant memory files
-
-5. **ONLY AFTER** completing analysis, proceed with PRD creation
+**Before starting, load essential project documentation:**
+- Read docs/PRP-FRAMEWORK.md (required for PRP creation)
+- Check relevant memory files for context
 
 ---
 
 ## Discovery Process
+
+**⚠️ All external research MUST use Ref MCP Server - do NOT use other web search tools**
 
 1. **Concept Expansion**
    - Break down the core idea
    - Define success criteria
    - Map to business goals if provided
 
-2. **Market & Technical Research**
-   - Do deep web search for the following:
-     - Market analysis
-     - Competitor analysis
-     - Technical feasibility study
-     - Best practice examples
-     - Integration possibilities
+2. **Market & Technical Research (using Ref MCP Server)**
+   - Use Ref for all external research:
+     - Market analysis: `mcp__Ref__ref_search_documentation("market analysis [topic]")`
+     - Competitor analysis: `mcp__Ref__ref_search_documentation("competitor analysis [topic]")`
+     - Technical feasibility: `mcp__Ref__ref_search_documentation("[technology] best practices implementation")`
+     - Best practice examples: `mcp__Ref__ref_search_documentation("[feature] implementation examples")`
+     - Integration possibilities: `mcp__Ref__ref_search_documentation("[tech stack] integration patterns")`
+   - Always use `mcp__Ref__ref_read_url` to read found documentation
 
 3. **User Research & Clarification**
      - Ask user for the following if not provided:
