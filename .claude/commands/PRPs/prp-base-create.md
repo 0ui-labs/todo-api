@@ -2,6 +2,35 @@
 
 ## Feature: $ARGUMENTS
 
+## 🚨 MANDATORY PRE-TASK ANALYSIS REQUIRED 🚨
+
+**⚠️ IMPORTANT: Complete ALL steps below BEFORE starting the task!**
+
+### 📌 REQUIRED ANALYSIS STEPS:
+
+1. **ANALYZE** the feature request to identify:
+   - Technologies/frameworks mentioned or implied
+   - Task type (always planning/documentation for PRP creation)
+   - Required documentation for research
+
+2. **LIST AND JUSTIFY** documentation needs:
+   - Technology Docs with reasons
+   - Project Guides (PRP-FRAMEWORK.md) with reasons
+   - Memory files needed
+
+3. **LOAD Ref documentation**:
+   - Use `mcp__Ref__ref_search_documentation` to search
+   - Use `mcp__Ref__ref_read_url` to read URLs
+   - Be specific in search queries
+
+4. **LOAD project guides**:
+   - Read docs/PRP-FRAMEWORK.md (required for PRP creation)
+   - Read docs/PYTHON-GUIDE.md if implementation-related
+
+5. **ONLY AFTER** completing analysis, proceed with PRP creation
+
+---
+
 Generate a complete PRP for feature implementation with deep and thorough research. Ensure rich context is passed to the AI through the PRP to enable one pass implementation success through self-validation and iterative refinement.
 
 The AI agent only gets the context you are appending to the PRP and its own training data. Assume the AI agent has access to the codebase and the same knowledge cutoff as you, so its important that your research findings are included or referenced in the PRP. The Agent has Websearch capabilities, so pass urls to documentation and examples.

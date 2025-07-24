@@ -4,6 +4,35 @@ Transform rough ideas into comprehensive PRDs with rich visual documentation.
 
 ## Idea: $ARGUMENTS
 
+## 🚨 MANDATORY PRE-TASK ANALYSIS REQUIRED 🚨
+
+**⚠️ IMPORTANT: Complete ALL steps below BEFORE starting the task!**
+
+### 📌 REQUIRED ANALYSIS STEPS:
+
+1. **ANALYZE** the idea/request to identify:
+   - Technologies/frameworks mentioned or implied
+   - Task type (planning/documentation/research)
+   - Required documentation for research
+
+2. **LIST AND JUSTIFY** documentation needs:
+   - Technology Docs with reasons
+   - Project Guides (PRP-FRAMEWORK.md) with reasons
+   - Memory files needed
+
+3. **LOAD Ref documentation**:
+   - Use `mcp__Ref__ref_search_documentation` to search
+   - Use `mcp__Ref__ref_read_url` to read URLs
+   - Search for market analysis, best practices, etc.
+
+4. **LOAD project guides**:
+   - Read docs/PRP-FRAMEWORK.md (required for PRP creation)
+   - Read relevant memory files
+
+5. **ONLY AFTER** completing analysis, proceed with PRD creation
+
+---
+
 ## Discovery Process
 
 1. **Concept Expansion**
