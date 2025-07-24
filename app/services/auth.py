@@ -67,11 +67,19 @@ class AuthService:
 
         return user
 
-    def create_user_token(self, user_id: UUID) -> tuple[str, int]:
+    async def create_user_token(self, user_id: UUID) -> tuple[str, int]:
         """Create an access token for a user."""
-        access_token = create_access_token(
+        from app.services.token_blacklist import get_token_blacklist_service
+        from app.utils.jwt_utils import create_access_token_async
+        
+        # Get user's current token version
+        blacklist_service = await get_token_blacklist_service()
+        token_version = await blacklist_service.get_user_token_version(str(user_id))
+        
+        access_token = await create_access_token_async(
             data={"sub": str(user_id)},
-            expires_delta=timedelta(minutes=settings.access_token_expire_minutes)
+            expires_delta=timedelta(minutes=settings.access_token_expire_minutes),
+            token_version=token_version
         )
         return access_token, settings.access_token_expire_minutes * 60
 
