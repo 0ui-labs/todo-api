@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python /Users/philippbriese/Documents/claude_code/todo-api/.claude/hooks/ai-task-analyzer-internal.py",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  }
+}
