@@ -1,5 +1,6 @@
 # Configure logging
 import logging
+from collections.abc import Callable
 
 from jose import jwt
 from jose.exceptions import JWTError
@@ -10,6 +11,8 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 
 from app.config import settings
+from app.middleware.rate_limit_config import RateLimitConfig
+from app.middleware.rate_limit_env_config import EnvRateLimitConfig
 
 logger = logging.getLogger(__name__)
 
@@ -42,6 +45,51 @@ def get_rate_limit_key(request: Request) -> str:
     # Fallback to IP address
     return get_remote_address(request)
 
+def get_user_tier(request: Request) -> str | None:
+    """Extract user tier from JWT token for tier-based rate limiting."""
+    try:
+        auth_header = request.headers.get("Authorization")
+        if not auth_header or not auth_header.startswith("Bearer "):
+            return None
+
+        token = auth_header.split(" ")[1]
+        payload = jwt.decode(
+            token,
+            settings.secret_key.get_secret_value(),
+            algorithms=[settings.algorithm]
+        )
+
+        # Check for user tier in token (could be added during login)
+        return payload.get("tier", "basic")
+
+    except (JWTError, KeyError, AttributeError):
+        return None
+
+
+def create_endpoint_limiter(
+    limit: str,
+    key_func: Callable | None = None,
+    per_tier: dict[str, str] | None = None
+) -> Callable:
+    """
+    Create a rate limiter for a specific endpoint with optional tier-based limits.
+    
+    Args:
+        limit: Default rate limit string (e.g., "10/minute")
+        key_func: Optional custom key function
+        per_tier: Optional dict of tier-specific limits {"premium": "100/minute", "admin": "unlimited"}
+    """
+    if per_tier:
+        def tier_aware_limit(request: Request) -> str:
+            tier = get_user_tier(request)
+            if tier and tier in per_tier:
+                return per_tier[tier]
+            return limit
+
+        return limiter.limit(tier_aware_limit, key_func=key_func or get_rate_limit_key)
+
+    return limiter.limit(limit, key_func=key_func or get_rate_limit_key)
+
 
 # Create Limiter instance
 limiter = Limiter(
@@ -53,9 +101,105 @@ limiter = Limiter(
     storage_uri=settings.redis_url if settings.redis_url else None,
     headers_enabled=True,
     in_memory_fallback_enabled=True,
+    strategy=EnvRateLimitConfig.get_strategy(),  # Configurable strategy
+    swallow_errors=False,  # Don't silently fail on Redis errors
 )
 
 # Custom Error Handler for 429 Responses
+def create_rate_limit_decorator(limit: str):
+    """Create a rate limit decorator with the specified limit."""
+    def decorator(func):
+        return limiter.limit(limit)(func)
+    return decorator
+
+
+# Pre-configured decorators for common use cases
+rate_limit_auth = create_rate_limit_decorator("5/minute")
+rate_limit_read = create_rate_limit_decorator("100/minute")
+rate_limit_write = create_rate_limit_decorator("30/minute")
+rate_limit_delete = create_rate_limit_decorator("20/minute")
+rate_limit_admin = create_rate_limit_decorator("10/minute")
+
+# Endpoint-specific limiters using configuration
+class RateLimiters:
+    """Centralized rate limiters for all endpoints."""
+
+    # Auth endpoints
+    auth_register = create_endpoint_limiter(
+        EnvRateLimitConfig.get_limit("AUTH", "REGISTER", RateLimitConfig.AUTH_LIMITS["register"]),
+        per_tier=EnvRateLimitConfig.get_tier_limits("AUTH", "REGISTER") or {"admin": "unlimited"}
+    )
+    auth_login = create_endpoint_limiter(
+        EnvRateLimitConfig.get_limit("AUTH", "LOGIN", RateLimitConfig.AUTH_LIMITS["login"]),
+        per_tier=EnvRateLimitConfig.get_tier_limits("AUTH", "LOGIN")
+    )
+
+    # Todo endpoints with tier support
+    todo_create = create_endpoint_limiter(
+        EnvRateLimitConfig.get_limit("TODO", "CREATE", RateLimitConfig.TODO_LIMITS["create"]),
+        per_tier=EnvRateLimitConfig.get_tier_limits("TODO", "CREATE") or {"premium": "60/minute", "admin": "unlimited"}
+    )
+    todo_list = create_endpoint_limiter(
+        EnvRateLimitConfig.get_limit("TODO", "LIST", RateLimitConfig.TODO_LIMITS["list"]),
+        per_tier=EnvRateLimitConfig.get_tier_limits("TODO", "LIST") or {"premium": "120/minute", "admin": "unlimited"}
+    )
+    todo_get = create_endpoint_limiter(
+        EnvRateLimitConfig.get_limit("TODO", "GET", RateLimitConfig.TODO_LIMITS["get"]),
+        per_tier=EnvRateLimitConfig.get_tier_limits("TODO", "GET")
+    )
+    todo_update = create_endpoint_limiter(
+        EnvRateLimitConfig.get_limit("TODO", "UPDATE", RateLimitConfig.TODO_LIMITS["update"]),
+        per_tier=EnvRateLimitConfig.get_tier_limits("TODO", "UPDATE")
+    )
+    todo_delete = create_endpoint_limiter(
+        EnvRateLimitConfig.get_limit("TODO", "DELETE", RateLimitConfig.TODO_LIMITS["delete"]),
+        per_tier=EnvRateLimitConfig.get_tier_limits("TODO", "DELETE")
+    )
+    todo_bulk = create_endpoint_limiter(
+        EnvRateLimitConfig.get_limit("TODO", "BULK", RateLimitConfig.TODO_LIMITS["bulk"]),
+        per_tier=EnvRateLimitConfig.get_tier_limits("TODO", "BULK") or {"premium": "10/minute", "admin": "20/minute"}
+    )
+
+    # Category endpoints
+    category_create = create_endpoint_limiter(
+        EnvRateLimitConfig.get_limit("CATEGORY", "CREATE", RateLimitConfig.CATEGORY_LIMITS["create"]),
+        per_tier=EnvRateLimitConfig.get_tier_limits("CATEGORY", "CREATE")
+    )
+    category_list = create_endpoint_limiter(
+        EnvRateLimitConfig.get_limit("CATEGORY", "LIST", RateLimitConfig.CATEGORY_LIMITS["list"]),
+        per_tier=EnvRateLimitConfig.get_tier_limits("CATEGORY", "LIST")
+    )
+    category_get = create_endpoint_limiter(
+        EnvRateLimitConfig.get_limit("CATEGORY", "GET", RateLimitConfig.CATEGORY_LIMITS["get"]),
+        per_tier=EnvRateLimitConfig.get_tier_limits("CATEGORY", "GET")
+    )
+    category_update = create_endpoint_limiter(
+        EnvRateLimitConfig.get_limit("CATEGORY", "UPDATE", RateLimitConfig.CATEGORY_LIMITS["update"]),
+        per_tier=EnvRateLimitConfig.get_tier_limits("CATEGORY", "UPDATE")
+    )
+    category_delete = create_endpoint_limiter(
+        EnvRateLimitConfig.get_limit("CATEGORY", "DELETE", RateLimitConfig.CATEGORY_LIMITS["delete"]),
+        per_tier=EnvRateLimitConfig.get_tier_limits("CATEGORY", "DELETE")
+    )
+
+    # Tag endpoints
+    tag_create = create_endpoint_limiter(
+        EnvRateLimitConfig.get_limit("TAG", "CREATE", RateLimitConfig.TAG_LIMITS["create"]),
+        per_tier=EnvRateLimitConfig.get_tier_limits("TAG", "CREATE")
+    )
+    tag_list = create_endpoint_limiter(
+        EnvRateLimitConfig.get_limit("TAG", "LIST", RateLimitConfig.TAG_LIMITS["list"]),
+        per_tier=EnvRateLimitConfig.get_tier_limits("TAG", "LIST")
+    )
+    tag_update = create_endpoint_limiter(
+        EnvRateLimitConfig.get_limit("TAG", "UPDATE", RateLimitConfig.TAG_LIMITS["update"]),
+        per_tier=EnvRateLimitConfig.get_tier_limits("TAG", "UPDATE")
+    )
+    tag_delete = create_endpoint_limiter(
+        EnvRateLimitConfig.get_limit("TAG", "DELETE", RateLimitConfig.TAG_LIMITS["delete"]),
+        per_tier=EnvRateLimitConfig.get_tier_limits("TAG", "DELETE")
+    )
+
 async def custom_rate_limit_exceeded_handler(
     request: Request, exc: Exception
 ) -> Response:
@@ -112,3 +256,30 @@ async def custom_rate_limit_exceeded_handler(
             }
         )
     return response
+
+def setup_rate_limiting(app):
+    """Setup rate limiting for the FastAPI application."""
+    from slowapi.middleware import SlowAPIMiddleware
+
+    # Check if rate limiting is enabled
+    if not EnvRateLimitConfig.is_enabled():
+        logger.info("Rate limiting is disabled via environment configuration")
+        return
+
+    # Add rate limit exceeded handler
+    app.add_exception_handler(RateLimitExceeded, custom_rate_limit_exceeded_handler)
+
+    # Add middleware for better performance
+    app.add_middleware(SlowAPIMiddleware)
+
+    # Store limiter in app state for access in routes
+    app.state.limiter = limiter
+
+    # Log configuration
+    strategy = EnvRateLimitConfig.get_strategy()
+    burst_config = EnvRateLimitConfig.get_burst_config()
+    logger.info(
+        f"Rate limiting configured successfully - "
+        f"Strategy: {strategy}, "
+        f"Burst size: {burst_config['size']}"
+    )

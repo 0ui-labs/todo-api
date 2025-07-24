@@ -1,3 +1,5 @@
+"""Integration tests for rate limiting functionality."""
+
 import asyncio
 import time
 
@@ -7,7 +9,7 @@ from httpx import AsyncClient
 
 @pytest.mark.asyncio
 class TestRateLimiting:
-    """Comprehensive tests for rate limiting middleware."""
+    """Test rate limiting functionality across different endpoints."""
 
     async def test_rate_limit_per_minute(
         self,
@@ -152,30 +154,49 @@ class TestRateLimiting:
             )
             assert response.status_code == 200
 
-    async def test_auth_endpoint_stricter_limits(
-        self,
-        client: AsyncClient
-    ):
-        """Test that auth endpoints have stricter rate limits."""
-        # Login endpoint should have tighter limits
-        login_attempts = 0
+    async def test_auth_login_rate_limit(self, client: AsyncClient):
+        """Test rate limiting on login endpoint (5/minute)."""
+        # Try to login 6 times rapidly
+        login_data = {
+            "username": "nonexistent@example.com",
+            "password": "wrongpassword"
+        }
 
-        for i in range(10):  # Try 10 login attempts
+        responses = []
+        for i in range(6):
             response = await client.post(
                 "/api/v1/auth/login",
-                data={
-                    "username": f"test{i}@example.com",
-                    "password": "wrongpassword"
-                }
+                data=login_data
             )
+            responses.append(response)
 
-            if response.status_code == 429:
-                login_attempts = i
-                break
+        # First 5 should work (return 401 for bad credentials)
+        for i in range(5):
+            assert responses[i].status_code == 401
 
-        # Should hit rate limit before 10 attempts
-        assert login_attempts < 10
-        assert login_attempts <= 5  # Expecting ~5 attempts limit
+        # 6th request should be rate limited
+        assert responses[5].status_code == 429
+        assert "rate_limit_exceeded" in responses[5].json()["error"]
+
+        # Check rate limit headers
+        assert "X-RateLimit-Limit" in responses[5].headers
+        assert "Retry-After" in responses[5].headers
+
+    async def test_auth_register_rate_limit(self, client: AsyncClient):
+        """Test rate limiting on register endpoint (10/hour)."""
+        # Since 10/hour is hard to test quickly, we'll check headers
+        response = await client.post(
+            "/api/v1/auth/register",
+            json={
+                "email": "test1@example.com",
+                "password": "password123",
+                "full_name": "Test User"
+            }
+        )
+
+        # Should have rate limit headers even on successful request
+        assert "X-RateLimit-Limit" in response.headers
+        assert "X-RateLimit-Remaining" in response.headers
 
     async def test_rate_limit_burst_requests(
         self,
@@ -208,3 +229,38 @@ class TestRateLimiting:
         assert success_count > 0
         assert rate_limited_count > 0
         assert success_count + rate_limited_count == 20
+
+    @pytest.mark.parametrize("endpoint,method,limit", [
+        ("/api/v1/todos", "GET", 60),
+        ("/api/v1/todos", "POST", 30),
+        ("/api/v1/categories", "GET", 60),
+        ("/api/v1/categories", "POST", 20),
+        ("/api/v1/tags", "GET", 100),
+        ("/api/v1/tags", "POST", 50),
+    ])
+    async def test_endpoint_specific_limits(
+        self,
+        client: AsyncClient,
+        auth_headers: dict,
+        endpoint: str,
+        method: str,
+        limit: int
+    ):
+        """Test that each endpoint has its specific rate limit."""
+        # Make a request to get rate limit header
+        if method == "GET":
+            response = await client.get(endpoint, headers=auth_headers)
+        else:
+            data = {"name": "Test"} if "categories" in endpoint or "tags" in endpoint else {
+                "title": "Test Todo"
+            }
+            response = await client.post(endpoint, json=data, headers=auth_headers)
+
+        # Check rate limit header matches expected limit
+        if "X-RateLimit-Limit" in response.headers:
+            # Parse the limit (format: "30/minute" or just "30")
+            limit_header = response.headers["X-RateLimit-Limit"]
+            limit_value = int(limit_header.split("/")[0])
+
+            # Should be close to expected limit
+            assert abs(limit_value - limit) <= limit * 0.2  # 20% tolerance

@@ -5,6 +5,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 
 from app.dependencies import CurrentUser, DatabaseSession
+from app.middleware.rate_limit import RateLimiters
 from app.models.todo import TodoStatus
 from app.schemas.base import PaginationParams
 from app.schemas.todo import (
@@ -19,6 +20,8 @@ from app.services.todo import TodoService
 
 router = APIRouter()
 
+
+@RateLimiters.todo_create
 
 @router.post(
     "/",
@@ -59,6 +62,7 @@ async def create_todo(
         "with pagination and filtering"
     ),
 )
+@RateLimiters.todo_list
 async def get_todos(
     request: Request,
     current_user: CurrentUser,
@@ -105,6 +109,7 @@ async def get_todos(
     summary="Get a specific todo",
     description="Get a specific todo by ID",
 )
+@RateLimiters.todo_get
 async def get_todo(
     request: Request,
     todo_id: UUID,
@@ -133,6 +138,7 @@ async def get_todo(
     summary="Update a todo",
     description="Update a specific todo (partial update)",
 )
+@RateLimiters.todo_update
 async def update_todo(
     request: Request,
     todo_id: UUID,
@@ -163,6 +169,7 @@ async def update_todo(
     summary="Replace a todo",
     description="Replace a specific todo (full update)",
 )
+@RateLimiters.todo_update
 async def replace_todo(
     request: Request,
     todo_id: UUID,
@@ -196,6 +203,7 @@ async def replace_todo(
     summary="Delete a todo",
     description="Soft delete a specific todo",
 )
+@RateLimiters.todo_delete
 async def delete_todo(
     request: Request,
     todo_id: UUID,

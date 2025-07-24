@@ -5,7 +5,6 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 
 from app.api import auth, categories, tags, todos
@@ -14,7 +13,7 @@ from app.database import engine
 from app.middleware.auth import AuthMiddleware
 from app.middleware.error_handler import ErrorHandlerMiddleware
 from app.middleware.logging import LoggingMiddleware
-from app.middleware.rate_limit import custom_rate_limit_exceeded_handler, limiter
+from app.middleware.rate_limit import limiter, setup_rate_limiting
 from app.middleware.security import SecurityHeadersMiddleware
 
 # Configure logging
@@ -46,8 +45,8 @@ app = FastAPI(
 )
 
 # Rate Limiting Setup
-app.state.limiter = limiter
-app.add_exception_handler(RateLimitExceeded, custom_rate_limit_exceeded_handler)
+# Setup rate limiting
+setup_rate_limiting(app)
 
 # Add CORS middleware
 app.add_middleware(

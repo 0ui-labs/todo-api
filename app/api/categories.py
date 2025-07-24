@@ -6,6 +6,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 
 from app.dependencies import CurrentUser, DatabaseSession
+from app.middleware.rate_limit import RateLimiters
 from app.schemas.base import PaginationParams
 from app.schemas.category import (
     CategoryCreate,
@@ -17,6 +18,8 @@ from app.services.category import CategoryService
 
 router = APIRouter()
 
+
+@RateLimiters.category_create
 
 @router.post(
     "/",
@@ -48,6 +51,10 @@ async def create_category(
             detail = error_msg
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=detail) from e
 
+
+@RateLimiters.category_list
+
+@RateLimiters.category_list
 
 @router.get(
     "/",
@@ -85,6 +92,8 @@ async def get_categories(
     )
 
 
+@RateLimiters.category_list
+
 @router.get(
     "/{category_id}",
     response_model=CategoryResponse,
@@ -114,6 +123,8 @@ async def get_category(
 
     return CategoryResponse.model_validate(category)
 
+
+@RateLimiters.category_update
 
 @router.patch(
     "/{category_id}",
@@ -157,6 +168,8 @@ async def update_category(
             detail = error_msg
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=detail) from e
 
+
+@RateLimiters.category_delete
 
 @router.delete(
     "/{category_id}",

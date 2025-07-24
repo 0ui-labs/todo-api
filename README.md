@@ -7,10 +7,16 @@ A production-ready REST API for managing todos with JWT authentication, PostgreS
 - RESTful API for todo management
 - JWT-based authentication
 - PostgreSQL database with Alembic migrations
-- Redis-based rate limiting
+- Redis-based rate limiting with tier support
 - Comprehensive test suite
 - Docker deployment ready
 - OpenAPI/Swagger documentation
+
+## Documentation
+
+- [Python Development Guide](docs/PYTHON-GUIDE.md) - Coding standards and best practices
+- [Rate Limiting Guide](docs/RATE-LIMITING.md) - Comprehensive rate limiting documentation
+- [PRP Framework](docs/PRP-FRAMEWORK.md) - Product Requirement Prompt methodology
 
 ## API Documentation
 
@@ -29,56 +35,25 @@ Authorization: Bearer <your-jwt-token>
 
 ## Rate Limiting
 
-### Overview
-The API implements rate limiting to prevent abuse and ensure fair usage. Rate limits are enforced using Redis and are applied per IP address for unauthenticated requests and per user ID for authenticated requests.
+The API implements comprehensive rate limiting with tier-based support. For detailed information, see the [Rate Limiting Guide](docs/RATE-LIMITING.md).
 
-### Default Rate Limits
-- **General Endpoints**: 100 requests per minute, 1000 requests per hour
-- **Authentication Endpoints**:
-  - `/auth/login`: 5 requests per minute
-  - `/auth/register`: 10 requests per hour
+### Quick Overview
+- **Per-user rate limiting** using JWT tokens (falls back to IP address)
+- **Redis-backed** with in-memory fallback
+- **Tier support** for basic, premium, and admin users
+- **Environment-based configuration**
+
+### Default Limits
+- **Todo operations**: 30-100 requests/minute depending on operation
+- **Authentication**: 5 requests/minute for login, 10/hour for registration
+- **Categories/Tags**: 20-100 requests/minute
 
 ### Rate Limit Headers
-Every API response includes rate limit information in the following headers:
-
-| Header | Description |
-|--------|-------------|
-| `X-RateLimit-Limit` | Maximum number of requests allowed in the current window |
-| `X-RateLimit-Remaining` | Number of requests remaining in the current window |
-| `X-RateLimit-Reset` | Unix timestamp when the rate limit window resets |
-
-Example response headers:
 ```
-X-RateLimit-Limit: 100
-X-RateLimit-Remaining: 95
-X-RateLimit-Reset: 1627890123
-```
-
-### Rate Limit Exceeded Response
-When rate limits are exceeded, the API returns a 429 status code with the following response format:
-
-```json
-{
-  "detail": "Rate limit exceeded. Please retry after 1627890123",
-  "retry_after": 1627890123
-}
-```
-
-The `retry_after` field contains the Unix timestamp indicating when the client can retry the request.
-
-### Redis Configuration
-Rate limiting requires Redis to be running. Configuration options can be set via environment variables:
-
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `REDIS_URL` | Redis connection URL | `redis://localhost:6379/0` |
-| `RATE_LIMIT_ENABLED` | Enable/disable rate limiting | `true` |
-| `RATE_LIMIT_PER_MINUTE` | Default requests per minute | `100` |
-| `RATE_LIMIT_PER_HOUR` | Default requests per hour | `1000` |
-
-To disable rate limiting (not recommended for production):
-```bash
-export RATE_LIMIT_ENABLED=false
+X-RateLimit-Limit: 30/minute
+X-RateLimit-Remaining: 25
+X-RateLimit-Reset: 1704123660
+Retry-After: 45 (only on 429 responses)
 ```
 
 ## Endpoints

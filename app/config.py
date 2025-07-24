@@ -51,6 +51,11 @@ class Settings(BaseSettings):
     # Rate limiting
     rate_limit_per_minute: int = 100
     rate_limit_per_hour: int = 1000
+
+    # Advanced rate limiting settings
+    rate_limit_burst_size: int = 10  # Allow burst of requests
+    rate_limit_strategy: str = "moving-window"  # moving-window or fixed-window
+    rate_limit_key_prefix: str = "todo_api"  # Redis key prefix
     rate_limit_auth_per_minute: int = 5
     rate_limit_auth_per_hour: int = 20
 
