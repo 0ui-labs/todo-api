@@ -1,7 +1,7 @@
 """Admin API endpoints for system management."""
 
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, Request, status
 
 from app.dependencies import CurrentUser, DatabaseSession
 from app.middleware.rate_limit import RateLimiters
@@ -22,6 +22,7 @@ router = APIRouter(
 )
 @RateLimiters.admin_list
 async def get_locked_accounts(
+    request: Request,
     current_user_id: CurrentUser,
     db: DatabaseSession,
 ) -> list[LockedAccount]:
@@ -60,6 +61,7 @@ async def get_locked_accounts(
 )
 @RateLimiters.admin_action
 async def unlock_account(
+    request: Request,
     unlock_request: UnlockAccountRequest,
     current_user_id: CurrentUser,
     db: DatabaseSession,

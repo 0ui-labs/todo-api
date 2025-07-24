@@ -3,7 +3,7 @@ import logging
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from slowapi.middleware import SlowAPIMiddleware
 
@@ -65,6 +65,22 @@ app.add_middleware(LoggingMiddleware)
 
 # Add SlowAPI middleware (must be after other middleware)
 app.add_middleware(SlowAPIMiddleware)
+
+
+# Request size limit middleware
+@app.middleware("http")
+async def limit_request_size(request: Request, call_next):
+    """Limit request size to prevent DoS attacks."""
+    from fastapi.responses import JSONResponse
+    
+    max_size = 10 * 1024 * 1024  # 10MB default
+    if request.headers.get("content-length"):
+        if int(request.headers["content-length"]) > max_size:
+            return JSONResponse(
+                status_code=413,
+                content={"detail": "Request too large"}
+            )
+    return await call_next(request)
 
 # Include routers
 app.include_router(auth.router, prefix=f"{settings.api_v1_str}/auth", tags=["auth"])
