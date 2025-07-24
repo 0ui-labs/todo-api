@@ -7,6 +7,7 @@ import redis.asyncio as redis
 from redis.exceptions import RedisError
 
 from app.config import settings
+from app.redis import get_redis_client
 
 logger = logging.getLogger(__name__)
 
@@ -34,11 +35,7 @@ class LoginRateLimitService:
     async def _get_redis(self) -> redis.Redis:
         """Get or create Redis client."""
         if self._redis is None:
-            self._redis = await redis.from_url(
-                settings.redis_url,
-                decode_responses=True,
-                db=settings.redis_db
-            )
+            self._redis = await get_redis_client(settings.redis_db)
         return self._redis
 
     async def record_failed_attempt(self, email: str) -> tuple[int, datetime | None]:

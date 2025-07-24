@@ -17,6 +17,7 @@ from app.middleware.rate_limit import limiter, setup_rate_limiting
 from app.middleware.security import SecurityHeadersMiddleware
 from app.middleware.monitoring import MonitoringMiddleware
 from app.monitoring.telemetry import setup_telemetry, instrument_app
+from app.redis import close_redis_pools
 from prometheus_client import make_asgi_app
 
 # Configure logging
@@ -46,6 +47,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     
     logger.info("Shutting down Todo API...")
     await engine.dispose()
+    await close_redis_pools()
 
 
 # Create FastAPI application

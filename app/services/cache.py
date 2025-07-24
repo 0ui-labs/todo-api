@@ -8,6 +8,7 @@ import redis.asyncio as redis
 from redis.exceptions import RedisError
 
 from app.config import settings
+from app.redis import get_redis_client
 from app.monitoring.metrics import (
     cache_deletes_total,
     cache_hits_total,
@@ -34,19 +35,7 @@ class CacheService:
     async def _get_redis(self) -> redis.Redis:
         """Get or create Redis client."""
         if self._redis is None:
-            # Parse the redis URL and modify the DB
-            redis_url = settings.redis_url
-            # Replace the DB number in the URL
-            if redis_url.endswith("/0") or redis_url.endswith("/1"):
-                redis_url = redis_url[:-1] + str(self._cache_db)
-            else:
-                redis_url = f"{redis_url}/{self._cache_db}"
-
-            self._redis = await redis.from_url(
-                redis_url,
-                decode_responses=True,
-                db=self._cache_db
-            )
+            self._redis = await get_redis_client(self._cache_db)
         return self._redis
 
     def _make_key(self, namespace: str, key: str) -> str:
