@@ -2,6 +2,7 @@
 """
 Task Analysis Hook for Claude Code
 Instructs Claude to perform AI-powered analysis before executing any task.
+Now uses Ref MCP server for documentation retrieval instead of Context7.
 """
 
 import sys
@@ -69,18 +70,18 @@ def main():
     print("   • 'database' → needs SQLAlchemy, PostgreSQL docs")
     print("   • 'caching' → needs Redis documentation")
     print()
-    print("4️⃣  LOAD Context7 documentation for EACH identified technology:")
-    print("   a) First use mcp__context7__resolve-library-id to find the correct library")
-    print("   b) Then use mcp__context7__get-library-docs with specific topic/tokens parameters")
+    print("4️⃣  LOAD Ref documentation for EACH identified technology:")
+    print("   a) First use mcp__Ref__ref_search_documentation to search for documentation")
+    print("   b) Then use mcp__Ref__ref_read_url to read specific documentation pages")
     print()
     print("   Examples:")
-    print("   • FastAPI: resolve-library-id('fastapi') → get-library-docs with topic='endpoints'")
-    print("   • SQLAlchemy: resolve-library-id('sqlalchemy') → get-library-docs with topic='orm'")
-    print("   • Pydantic: resolve-library-id('pydantic') → get-library-docs with topic='validation'")
-    print("   • JWT: resolve-library-id('python-jose') → get-library-docs with topic='authentication'")
+    print("   • FastAPI: ref_search_documentation('FastAPI API endpoints documentation')")
+    print("   • SQLAlchemy: ref_search_documentation('SQLAlchemy ORM documentation')")
+    print("   • Pydantic: ref_search_documentation('Pydantic validation documentation')")
+    print("   • JWT: ref_search_documentation('python-jose JWT authentication')")
     print()
-    print("   ⚠️  IMPORTANT: Always specify 'topic' parameter to load only relevant sections!")
-    print("   ⚠️  Use 'tokens' parameter (default 10000) to control documentation size")
+    print("   ⚠️  IMPORTANT: Be specific in your search queries to find relevant documentation!")
+    print("   ⚠️  Use ref_read_url with the exact URL from search results to read content")
     print()
     print("5️⃣  LOAD project guides based on task type:")
     print("   • Implementation/coding → Read docs/PYTHON-GUIDE.md")
@@ -94,7 +95,7 @@ def main():
     print("Task: 'Implement user registration with email validation'")
     print("→ Technologies: FastAPI (API), JWT (auth), Pydantic (validation), SQLAlchemy (DB)")
     print("→ Guides: PYTHON-GUIDE.md (implementation)")
-    print("→ Action: Load all 4 Context7 docs + Python guide BEFORE coding")
+    print("→ Action: Search and load all 4 technology docs via Ref + Python guide BEFORE coding")
     print()
     print("=" * 80)
     print("⏸️  PAUSE NOW and complete the analysis steps above!")
