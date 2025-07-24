@@ -39,8 +39,8 @@ services:
     env_file:
       - ../.env
     environment:
-      ENVIRONMENT: production
-      SECRET_KEY: ${SECRET_KEY:?SECRET_KEY is required}
+      ENVIRONMENT: development
+      SECRET_KEY: ${SECRET_KEY:-}  # Optional in dev
       DATABASE_URL: postgresql+asyncpg://${DATABASE_USER}:${DATABASE_PASSWORD}@db:${DATABASE_PORT}/${DATABASE_NAME}
       REDIS_URL: redis://redis:${REDIS_PORT}/${REDIS_DB}
     depends_on:
@@ -51,7 +51,7 @@ services:
     volumes:
       - ../app:/app/app
       - ../alembic:/app/alembic
-    # CORRECTED COMMAND:
+    # Development mode with auto-reload
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 
 volumes:

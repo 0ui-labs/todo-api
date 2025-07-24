@@ -1,10 +1,10 @@
 """Main FastAPI application."""
-import logging
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Request, HTTPException
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from prometheus_client import make_asgi_app
 from slowapi.middleware import SlowAPIMiddleware
 
 from app.api import admin, auth, categories, tags, todos
@@ -13,15 +13,14 @@ from app.database import engine
 from app.middleware.auth import AuthMiddleware
 from app.middleware.error_handler import ErrorHandlerMiddleware
 from app.middleware.logging import LoggingMiddleware
+from app.middleware.monitoring import MonitoringMiddleware
 from app.middleware.rate_limit import limiter, setup_rate_limiting
 from app.middleware.security import SecurityHeadersMiddleware
-from app.middleware.monitoring import MonitoringMiddleware
-from app.monitoring.telemetry import setup_telemetry, instrument_app
-from app.redis import close_redis_pools
-from prometheus_client import make_asgi_app
 
 # Configure structured logging
-from app.monitoring.logging_config import setup_logging, get_logger
+from app.monitoring.logging_config import get_logger, setup_logging
+from app.monitoring.telemetry import instrument_app, setup_telemetry
+from app.redis import close_redis_pools
 
 # Setup logging before anything else
 setup_logging(
@@ -32,27 +31,48 @@ setup_logging(
 logger = get_logger(__name__)
 
 
+def verify_production_config() -> bool:
+    """Verify critical production settings."""
+    checks = {
+        "SECRET_KEY": bool(settings.secret_key),
+        "DATABASE_URL": bool(settings.database_url),
+        "CORS_ORIGINS": settings.backend_cors_origins != ["*"],
+    }
+
+    failed = [k for k, v in checks.items() if not v]
+    if failed:
+        logger.error(f"Production config missing: {', '.join(failed)}")
+        return False
+
+    return True
+
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
-    """Handle application lifecycle events."""
+    """Enhanced lifecycle with security checks."""
     logger.info("Starting up Todo API...")
-    
+
+    # Security validation
+    if settings.environment == "production":
+        if not verify_production_config():
+            logger.critical("Production configuration validation failed!")
+            raise SystemExit(1)
+
     # Setup OpenTelemetry
     setup_telemetry(
         service_name="todo-api",
         service_version="1.0.0",
         otlp_endpoint=settings.otlp_endpoint if hasattr(settings, 'otlp_endpoint') else None
     )
-    
+
     # Instrument the application
     instrument_app(app, engine.sync_engine)
-    
+
     # Setup database metrics collection
     from app.monitoring.db_metrics import setup_db_metrics
     setup_db_metrics(engine)
-    
+
     yield
-    
+
     logger.info("Shutting down Todo API...")
     await engine.dispose()
     await close_redis_pools()
@@ -98,7 +118,7 @@ app.add_middleware(SlowAPIMiddleware)
 async def limit_request_size(request: Request, call_next):
     """Limit request size to prevent DoS attacks."""
     from fastapi.responses import JSONResponse
-    
+
     max_size = 10 * 1024 * 1024  # 10MB default
     if request.headers.get("content-length"):
         if int(request.headers["content-length"]) > max_size:

@@ -1,10 +1,14 @@
 """Configuration settings for the Todo API."""
 
+import logging
+import os
 import re
 import secrets
 
-from pydantic import Field, SecretStr, field_validator
+from pydantic import Field, SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+logger = logging.getLogger(__name__)
 
 
 class Settings(BaseSettings):
@@ -15,6 +19,17 @@ class Settings(BaseSettings):
         env_ignore_empty=True,
         extra="ignore",
     )
+
+    @model_validator(mode='after')
+    def validate_secret_key_requirement(self) -> 'Settings':
+        """Ensure SECRET_KEY is set in production."""
+        if self.environment == "production":
+            if not self.secret_key:
+                raise ValueError(
+                    "SECRET_KEY is required in production environment. "
+                    "Set it via environment variable."
+                )
+        return self
 
     # Application settings
     app_name: str = "Todo API"
@@ -37,10 +52,14 @@ class Settings(BaseSettings):
     redis_rate_limit_db: int = Field(default=1)
     redis_url_override: str | None = Field(default=None)
 
+    # Environment settings
+    environment: str = Field(default="development")
+    require_secure_key: bool = Field(default=True)
+
     # Security settings
-    secret_key: SecretStr = Field(
-        default_factory=lambda: SecretStr(secrets.token_urlsafe(64)),
-        description="JWT secret key - MUST be set in production via env variable",
+    secret_key: SecretStr | None = Field(
+        default=None,
+        description="JWT secret key - REQUIRED in production"
     )
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 60
@@ -58,15 +77,28 @@ class Settings(BaseSettings):
     rate_limit_key_prefix: str = "todo_api"  # Redis key prefix
     rate_limit_auth_per_minute: int = 5
     rate_limit_auth_per_hour: int = 20
-    
+
     # Monitoring and observability settings
-    otlp_endpoint: str | None = Field(default=None, description="OpenTelemetry collector endpoint")
+    otlp_endpoint: str | None = Field(
+        default=None, description="OpenTelemetry collector endpoint"
+    )
     json_logs: bool = Field(default=True, description="Enable JSON structured logging")
     log_level: str = Field(default="INFO", description="Logging level")
 
     @field_validator("secret_key", mode="after")
     @classmethod
-    def validate_secret_key(cls, v: SecretStr) -> SecretStr:
+    def validate_secret_key_strength(cls, v: SecretStr | None) -> SecretStr:
+        """Enhanced validation with detailed feedback."""
+        if not v:
+            if os.getenv("ENVIRONMENT", "development") == "production":
+                raise ValueError("SECRET_KEY is required in production")
+            # Development fallback
+            logger.warning(
+                "No SECRET_KEY set - generating temporary key for development. "
+                "This is NOT secure for production!"
+            )
+            return SecretStr(secrets.token_urlsafe(64))
+
         secret = v.get_secret_value()
 
         # Check minimum length (OWASP recommendation)

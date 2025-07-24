@@ -185,6 +185,29 @@ This will start:
    uvicorn app.main:app --reload
    ```
 
+## 🔐 Security Configuration
+
+### SECRET_KEY Setup (Required for Production)
+
+The SECRET_KEY is critical for JWT token security. 
+
+**Generate a secure key:**
+```bash
+python scripts/generate_secret_key.py
+```
+
+**Set in environment:**
+```bash
+# .env file
+SECRET_KEY="your-generated-64-character-key"
+```
+
+**Production Requirements:**
+- Minimum 64 characters
+- High entropy (no patterns)
+- Unique per environment
+- Never commit to git
+
 ## Testing
 
 Run the test suite:
