@@ -6,8 +6,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.dependencies import get_current_user, get_db
-from app.models.user import User
+from app.dependencies import CurrentUser, DatabaseSession
 from app.schemas.tag import TagCreate, TagResponse, TagUpdate
 from app.services.tag import TagService
 
@@ -17,8 +16,8 @@ router = APIRouter()
 @router.post("/", response_model=TagResponse, status_code=status.HTTP_201_CREATED)
 async def create_tag(
     tag_data: TagCreate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: DatabaseSession,
+    current_user_id: CurrentUser,
 ) -> TagResponse:
     """Create a new tag.
 
@@ -48,8 +47,8 @@ async def create_tag(
 
 @router.get("/", response_model=List[TagResponse])
 async def get_tags(
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: DatabaseSession,
+    current_user_id: CurrentUser,
 ) -> List[TagResponse]:
     """Get all tags.
 
@@ -68,8 +67,8 @@ async def get_tags(
 @router.get("/{tag_id}", response_model=TagResponse)
 async def get_tag(
     tag_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: DatabaseSession,
+    current_user_id: CurrentUser,
 ) -> TagResponse:
     """Get a specific tag.
 
@@ -100,8 +99,8 @@ async def get_tag(
 async def update_tag(
     tag_id: UUID,
     tag_data: TagUpdate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: DatabaseSession,
+    current_user_id: CurrentUser,
 ) -> TagResponse:
     """Update a tag.
 
@@ -139,8 +138,8 @@ async def update_tag(
 @router.delete("/{tag_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_tag(
     tag_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: DatabaseSession,
+    current_user_id: CurrentUser,
 ) -> None:
     """Delete a tag.
 

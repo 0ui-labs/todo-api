@@ -13,7 +13,7 @@ class TagBase(BaseModel):
     name: str = Field(..., min_length=1, max_length=50, description="Tag name")
     color: Optional[str] = Field(
         None,
-        regex="^#[0-9A-Fa-f]{6}$",
+        pattern="^#[0-9A-Fa-f]{6}$",
         description="Hex color code (e.g., #FF5733)",
     )
 
@@ -34,7 +34,7 @@ class TagUpdate(BaseModel):
     """Schema for updating a tag."""
 
     name: Optional[str] = Field(None, min_length=1, max_length=50)
-    color: Optional[str] = Field(None, regex="^#[0-9A-Fa-f]{6}$")
+    color: Optional[str] = Field(None, pattern="^#[0-9A-Fa-f]{6}$")
 
     @field_validator("name")
     @classmethod
