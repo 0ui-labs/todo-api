@@ -200,6 +200,16 @@ class RateLimiters:
         EnvRateLimitConfig.get_limit("TAG", "DELETE", RateLimitConfig.TAG_LIMITS["delete"]),
         per_tier=EnvRateLimitConfig.get_tier_limits("TAG", "DELETE")
     )
+    
+    # Admin endpoints
+    admin_list = create_endpoint_limiter(
+        EnvRateLimitConfig.get_limit("ADMIN", "LIST", "60/minute"),
+        per_tier=EnvRateLimitConfig.get_tier_limits("ADMIN", "LIST") or {"admin": "unlimited"}
+    )
+    admin_action = create_endpoint_limiter(
+        EnvRateLimitConfig.get_limit("ADMIN", "ACTION", "30/minute"),
+        per_tier=EnvRateLimitConfig.get_tier_limits("ADMIN", "ACTION") or {"admin": "unlimited"}
+    )
 
 async def custom_rate_limit_exceeded_handler(
     request: Request, exc: Exception

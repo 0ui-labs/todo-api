@@ -104,6 +104,7 @@ async def test_user(async_session: AsyncSession) -> User:
         password_hash=get_password_hash("TestPassword123!"),
         name="Test User",
         is_active=True,
+        is_admin=False,
         created_at=datetime.now(UTC),
         updated_at=datetime.now(UTC)
     )
@@ -414,6 +415,55 @@ async def second_user_headers(
     token = response.json()["access_token"]
 
     return {"Authorization": f"Bearer {token}"}
+
+@pytest_asyncio.fixture(scope="function")
+async def admin_user(async_session: AsyncSession) -> User:
+    """Create an admin user."""
+    user = User(
+        id=uuid4(),
+        email="admin@example.com",
+        password_hash=get_password_hash("AdminPassword123!"),
+        name="Admin User",
+        is_active=True,
+        is_admin=True,
+        created_at=datetime.now(UTC),
+        updated_at=datetime.now(UTC)
+    )
+    async_session.add(user)
+    await async_session.commit()
+    await async_session.refresh(user)
+    return user
+
+
+@pytest_asyncio.fixture(scope="function")
+async def admin_headers(admin_user: User, app_settings) -> dict:
+    """Create authentication headers with JWT token for admin."""
+    access_token_expires = timedelta(minutes=app_settings.access_token_expire_minutes)
+    access_token = jwt.encode(
+        {
+            "sub": str(admin_user.id),
+            "exp": datetime.now(UTC) + access_token_expires,
+        },
+        app_settings.secret_key.get_secret_value(),
+        algorithm=app_settings.algorithm,
+    )
+    return {"Authorization": f"Bearer {access_token}"}
+
+
+@pytest_asyncio.fixture(scope="function")
+async def test_user_headers(test_user: User, app_settings) -> dict:
+    """Alias for auth_headers - for backward compatibility."""
+    access_token_expires = timedelta(minutes=app_settings.access_token_expire_minutes)
+    access_token = jwt.encode(
+        {
+            "sub": str(test_user.id),
+            "exp": datetime.now(UTC) + access_token_expires,
+        },
+        app_settings.secret_key.get_secret_value(),
+        algorithm=app_settings.algorithm,
+    )
+    return {"Authorization": f"Bearer {access_token}"}
+
 
 @pytest.fixture
 def app_settings():

@@ -1,4 +1,5 @@
 """Authentication endpoints."""
+
 from fastapi import APIRouter, HTTPException, Request, status
 
 from app.config import settings
@@ -49,29 +50,94 @@ async def login(
     db: DatabaseSession,
 ) -> TokenResponse:
     """Login user and return access token."""
-    service = AuthService(db)
+    from app.services.login_rate_limit import LoginRateLimitService
 
-    # Authenticate user
-    user = await service.authenticate_user(
-        email=login_data.email,
-        password=login_data.password
-    )
+    # Initialize services
+    auth_service = AuthService(db)
+    rate_limit_service = LoginRateLimitService()
 
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid email or password",
-            headers={"WWW-Authenticate": "Bearer"},
+    try:
+        # Check if user is rate limited
+        is_allowed, locked_until, attempts = await rate_limit_service.check_rate_limit(
+            login_data.email
         )
 
-    # Create access token
-    access_token, expires_in = await service.create_user_token(user.id)
+        if not is_allowed and locked_until:
+            # Calculate remaining lockout time
+            from datetime import datetime
+            remaining_seconds = int((locked_until - datetime.utcnow()).total_seconds())
 
-    return TokenResponse(
-        access_token=access_token,
-        token_type="bearer",
-        expires_in=expires_in,
-    )
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail={
+                    "message": "Too many failed login attempts. Account is locked.",
+                    "locked_until": locked_until.isoformat(),
+                    "remaining_seconds": remaining_seconds,
+                    "failed_attempts": attempts
+                },
+                headers={"Retry-After": str(remaining_seconds)},
+            )
+
+        # Authenticate user
+        user = await auth_service.authenticate_user(
+            email=login_data.email,
+            password=login_data.password
+        )
+
+        if not user:
+            # Record failed attempt
+            attempts, lockout_until = await rate_limit_service.record_failed_attempt(
+                login_data.email
+            )
+            current_attempts = attempts
+
+            if lockout_until:
+                # Account just got locked
+                remaining_seconds = int(
+                    (lockout_until - datetime.utcnow()).total_seconds()
+                )
+                raise HTTPException(
+                    status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                    detail={
+                        "message": (
+                            "Too many failed login attempts. Account is now locked."
+                        ),
+                        "locked_until": lockout_until.isoformat(),
+                        "remaining_seconds": remaining_seconds,
+                        "failed_attempts": current_attempts
+                    },
+                    headers={"Retry-After": str(remaining_seconds)},
+                )
+            else:
+                # Regular failed login
+                remaining_attempts = max(
+                    0, rate_limit_service.max_attempts - current_attempts
+                )
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail={
+                        "message": "Invalid email or password",
+                        "remaining_attempts": remaining_attempts,
+                        "failed_attempts": current_attempts
+                    },
+                    headers={"WWW-Authenticate": "Bearer"},
+                )
+
+        # Clear failed attempts on successful login
+        await rate_limit_service.clear_failed_attempts(login_data.email)
+
+        # Create access token
+        access_token, expires_in = await auth_service.create_user_token(user.id)
+
+        return TokenResponse(
+            access_token=access_token,
+            token_type="bearer",
+            expires_in=expires_in,
+        )
+
+    finally:
+        # Clean up
+        await rate_limit_service.close()
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
 async def logout(

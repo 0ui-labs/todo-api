@@ -7,7 +7,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from slowapi.middleware import SlowAPIMiddleware
 
-from app.api import auth, categories, tags, todos
+from app.api import admin, auth, categories, tags, todos
 from app.config import settings
 from app.database import engine
 from app.middleware.auth import AuthMiddleware
@@ -75,6 +75,7 @@ app.include_router(
 )
 app.include_router(todos.router, prefix=f"{settings.api_v1_str}/todos", tags=["todos"])
 app.include_router(tags.router, prefix=f"{settings.api_v1_str}/tags", tags=["tags"])
+app.include_router(admin.router, prefix=f"{settings.api_v1_str}/admin", tags=["admin"])
 
 
 @app.get("/")
