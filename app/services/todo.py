@@ -35,22 +35,22 @@ class TodoService:
 
         # Extract tag_ids before creating the todo
         tag_ids = todo_data.tag_ids if hasattr(todo_data, 'tag_ids') else []
-        
+
         # Create todo without tag_ids
         todo_dict = todo_data.model_dump(exclude_unset=True)
         todo_dict.pop('tag_ids', None)
-        
+
         todo = Todo(
             user_id=user_id,
             **todo_dict
         )
-        
+
         # Handle tags if provided
         if tag_ids:
             tag_service = TagService(self.db)
             tags = await tag_service.get_by_ids(tag_ids)
             todo.tags = tags
-        
+
         self.db.add(todo)
         await self.db.commit()
 
@@ -147,10 +147,10 @@ class TodoService:
             return None
 
         update_data = todo_data.model_dump(exclude_unset=True)
-        
+
         # Handle tags separately
         tag_ids = update_data.pop('tag_ids', None)
-        
+
         # Handle status change to completed
         if update_data.get("status") == TodoStatus.COMPLETED and not todo.completed_at:
             update_data["completed_at"] = datetime.now()
@@ -160,7 +160,7 @@ class TodoService:
         # Update fields
         for field, value in update_data.items():
             setattr(todo, field, value)
-            
+
         # Update tags if provided
         if tag_ids is not None:
             tag_service = TagService(self.db)

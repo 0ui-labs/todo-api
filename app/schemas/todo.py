@@ -1,6 +1,5 @@
 """Todo schemas for request/response validation."""
 from datetime import datetime
-from typing import List
 from uuid import UUID
 
 from pydantic import Field, field_validator
@@ -38,7 +37,7 @@ class TodoBase(BaseSchema):
 class TodoCreate(TodoBase):
     """Schema for creating a new todo."""
 
-    tag_ids: List[UUID] = Field(default_factory=list, description="List of tag IDs")
+    tag_ids: list[UUID] = Field(default_factory=list, description="List of tag IDs")
 
     @field_validator("due_date")
     @classmethod
@@ -58,7 +57,7 @@ class TodoUpdate(BaseSchema):
     due_date: datetime | None = Field(None)
     category_id: UUID | None = Field(None)
     completed_at: datetime | None = Field(None)
-    tag_ids: List[UUID] | None = Field(None, description="List of tag IDs")
+    tag_ids: list[UUID] | None = Field(None, description="List of tag IDs")
 
     @field_validator("status")
     @classmethod
@@ -77,7 +76,7 @@ class TodoResponse(TodoBase, TimestampMixin):
     status: TodoStatus = Field(..., description="Todo status")
     completed_at: datetime | None = Field(None, description="Completion timestamp")
     category: CategoryResponse | None = Field(None, description="Category details")
-    tags: List[TagResponse] = Field(default_factory=list, description="Associated tags")
+    tags: list[TagResponse] = Field(default_factory=list, description="Associated tags")
 
     model_config = BaseSchema.model_config.copy()
     model_config["json_schema_extra"] = {

@@ -1,6 +1,5 @@
 """Tag service for business logic."""
 
-from typing import List, Optional
 from uuid import UUID
 
 from sqlalchemy import select
@@ -43,17 +42,17 @@ class TagService:
 
         tag = Tag(**tag_data.model_dump())
         self.db.add(tag)
-        
+
         try:
             await self.db.commit()
             await self.db.refresh(tag)
         except IntegrityError:
             await self.db.rollback()
             raise ValueError(f"Tag with name '{tag_data.name}' already exists")
-        
+
         return tag
 
-    async def get_by_id(self, tag_id: UUID) -> Optional[Tag]:
+    async def get_by_id(self, tag_id: UUID) -> Tag | None:
         """Get tag by ID.
 
         Args:
@@ -67,7 +66,7 @@ class TagService:
         )
         return result.scalar_one_or_none()
 
-    async def get_by_name(self, name: str) -> Optional[Tag]:
+    async def get_by_name(self, name: str) -> Tag | None:
         """Get tag by name.
 
         Args:
@@ -81,7 +80,7 @@ class TagService:
         )
         return result.scalar_one_or_none()
 
-    async def get_all(self) -> List[Tag]:
+    async def get_all(self) -> list[Tag]:
         """Get all tags.
 
         Returns:
@@ -92,7 +91,7 @@ class TagService:
         )
         return list(result.scalars().all())
 
-    async def update(self, tag_id: UUID, tag_data: TagUpdate) -> Optional[Tag]:
+    async def update(self, tag_id: UUID, tag_data: TagUpdate) -> Tag | None:
         """Update a tag.
 
         Args:
@@ -110,7 +109,7 @@ class TagService:
             return None
 
         update_data = tag_data.model_dump(exclude_unset=True)
-        
+
         # If updating name, check for duplicates
         if "name" in update_data and update_data["name"] != tag.name:
             existing_tag = await self.get_by_name(update_data["name"])
@@ -126,7 +125,7 @@ class TagService:
         except IntegrityError:
             await self.db.rollback()
             raise ValueError("Failed to update tag due to constraint violation")
-        
+
         return tag
 
     async def delete(self, tag_id: UUID) -> bool:
@@ -146,7 +145,7 @@ class TagService:
         await self.db.commit()
         return True
 
-    async def get_by_ids(self, tag_ids: List[UUID]) -> List[Tag]:
+    async def get_by_ids(self, tag_ids: list[UUID]) -> list[Tag]:
         """Get multiple tags by their IDs.
 
         Args:

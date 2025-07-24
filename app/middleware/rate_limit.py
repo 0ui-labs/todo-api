@@ -79,14 +79,15 @@ def create_endpoint_limiter(
         key_func: Optional custom key function
         per_tier: Optional dict of tier-specific limits {"premium": "100/minute", "admin": "unlimited"}
     """
+    # TODO: Fix tier-based rate limiting - currently disabled due to SlowAPI compatibility issue
+    # The tier-aware callable is not being called correctly by SlowAPI
+    # For now, just use the default limit for all users
     if per_tier:
-        def tier_aware_limit(request: Request) -> str:
-            tier = get_user_tier(request)
-            if tier and tier in per_tier:
-                return per_tier[tier]
-            return limit
-
-        return limiter.limit(tier_aware_limit, key_func=key_func or get_rate_limit_key)
+        # Log a warning that tier-based limiting is not yet implemented
+        import logging
+        logging.getLogger(__name__).warning(
+            "Tier-based rate limiting is not yet implemented, using default limit"
+        )
 
     return limiter.limit(limit, key_func=key_func or get_rate_limit_key)
 
@@ -99,7 +100,7 @@ limiter = Limiter(
         f"{settings.rate_limit_per_hour}/hour"
     ],
     storage_uri=settings.redis_url if settings.redis_url else None,
-    headers_enabled=True,
+    headers_enabled=False,  # Disabled because FastAPI returns models, not Response objects
     in_memory_fallback_enabled=True,
     strategy=EnvRateLimitConfig.get_strategy(),  # Configurable strategy
     swallow_errors=False,  # Don't silently fail on Redis errors

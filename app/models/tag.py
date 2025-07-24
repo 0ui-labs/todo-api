@@ -2,7 +2,7 @@
 
 import uuid
 from datetime import datetime
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING
 
 from sqlalchemy import DateTime, String, func
 from sqlalchemy.dialects.postgresql import UUID
@@ -47,7 +47,7 @@ class Tag(Base):
     )
 
     # Relationships
-    todos: Mapped[List["Todo"]] = relationship(
+    todos: Mapped[list["Todo"]] = relationship(
         "Todo",
         secondary="todo_tags",
         back_populates="tags",

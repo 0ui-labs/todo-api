@@ -2,7 +2,7 @@
 
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, Request, status
 
 from app.dependencies import CurrentUser, DatabaseSession
 from app.middleware.rate_limit import RateLimiters
@@ -13,9 +13,9 @@ router = APIRouter()
 
 
 @RateLimiters.tag_create
-
 @router.post("/", response_model=TagResponse, status_code=status.HTTP_201_CREATED)
 async def create_tag(
+    request: Request,
     tag_data: TagCreate,
     db: DatabaseSession,
     current_user_id: CurrentUser,
@@ -47,9 +47,9 @@ async def create_tag(
 
 
 @RateLimiters.tag_list
-
 @router.get("/", response_model=list[TagResponse])
 async def get_tags(
+    request: Request,
     db: DatabaseSession,
     current_user_id: CurrentUser,
 ) -> list[TagResponse]:
@@ -68,9 +68,9 @@ async def get_tags(
 
 
 @RateLimiters.tag_list
-
 @router.get("/{tag_id}", response_model=TagResponse)
 async def get_tag(
+    request: Request,
     tag_id: UUID,
     db: DatabaseSession,
     current_user_id: CurrentUser,
@@ -101,9 +101,9 @@ async def get_tag(
 
 
 @RateLimiters.tag_update
-
 @router.put("/{tag_id}", response_model=TagResponse)
 async def update_tag(
+    request: Request,
     tag_id: UUID,
     tag_data: TagUpdate,
     db: DatabaseSession,
@@ -143,9 +143,9 @@ async def update_tag(
 
 
 @RateLimiters.tag_delete
-
 @router.delete("/{tag_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_tag(
+    request: Request,
     tag_id: UUID,
     db: DatabaseSession,
     current_user_id: CurrentUser,

@@ -6,17 +6,18 @@ Create Date: 2025-01-23 01:35:00.000000
 
 """
 
-from typing import Sequence, Union
+from collections.abc import Sequence
 
 import sqlalchemy as sa
-from alembic import op
 from sqlalchemy.dialects import postgresql
+
+from alembic import op
 
 # revision identifiers, used by Alembic.
 revision: str = "add_tags_many_to_many"
-down_revision: Union[str, None] = "c5363c8bc7fb"
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | None = "c5363c8bc7fb"
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
@@ -67,7 +68,7 @@ def downgrade() -> None:
     op.drop_index(op.f("ix_todo_tags_tag_id"), table_name="todo_tags")
     op.drop_index(op.f("ix_todo_tags_todo_id"), table_name="todo_tags")
     op.drop_index(op.f("ix_tags_name"), table_name="tags")
-    
+
     # Drop tables
     op.drop_table("todo_tags")
     op.drop_table("tags")
