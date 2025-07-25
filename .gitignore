@@ -21,3 +21,4 @@ wheels/
 # Code review temporary files (but NOT the reviews themselves)
 PRPs/code-reviews/*.tmp
 PRPs/code-reviews/*.draft
+**/.DS_Store
