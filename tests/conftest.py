@@ -449,6 +449,35 @@ async def admin_headers(admin_user: User, app_settings) -> dict:
     )
     return {"Authorization": f"Bearer {access_token}"}
 
+@pytest_asyncio.fixture(scope="function")
+async def second_user_with_category(async_session: AsyncSession) -> dict:
+    """Create a second test user with their own category."""
+    # Create a second user
+    second_user = User(
+        id=uuid4(),
+        email="seconduser@example.com",
+        password_hash=get_password_hash("SecondPassword123!"),
+        name="Second User",
+        is_active=True,
+        is_admin=False,
+        created_at=datetime.now(UTC),
+        updated_at=datetime.now(UTC)
+    )
+    async_session.add(second_user)
+    await async_session.flush()  # Get ID
+
+    # Create a category for this second user
+    category = Category(
+        id=uuid4(),
+        name="Second User's Category",
+        user_id=second_user.id,
+        created_at=datetime.now(UTC)
+    )
+    async_session.add(category)
+    await async_session.commit()
+
+    return {"user": second_user, "category": category}
+
 
 @pytest_asyncio.fixture(scope="function")
 async def test_user_headers(test_user: User, app_settings) -> dict:
