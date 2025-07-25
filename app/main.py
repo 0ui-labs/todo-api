@@ -101,30 +101,17 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Add custom middleware (order matters - error handler should be first)
-app.add_middleware(ErrorHandlerMiddleware)
-app.add_middleware(MonitoringMiddleware)  # Add monitoring middleware
-app.add_middleware(SecurityHeadersMiddleware)
-app.add_middleware(LoggingMiddleware)
+# Apply custom middleware via registry
+from app.middleware.registry import create_middleware_registry
+
+middleware_registry = create_middleware_registry()
+middleware_registry.apply_to_app(app)
 
 # Add SlowAPI middleware (must be after other middleware)
 app.add_middleware(SlowAPIMiddleware)
 
 
-# Request size limit middleware
-@app.middleware("http")
-async def limit_request_size(request: Request, call_next):
-    """Limit request size to prevent DoS attacks."""
-    from fastapi.responses import JSONResponse
 
-    max_size = 10 * 1024 * 1024  # 10MB default
-    if request.headers.get("content-length"):
-        if int(request.headers["content-length"]) > max_size:
-            return JSONResponse(
-                status_code=413,
-                content={"detail": "Request too large"}
-            )
-    return await call_next(request)
 
 # Include routers
 app.include_router(auth.router, prefix=f"{settings.api_v1_str}/auth", tags=["auth"])
