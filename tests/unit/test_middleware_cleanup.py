@@ -63,7 +63,15 @@ class TestMiddlewareCleanup:
                 "password": "password123"
             }
         )
-        # May fail due to existing user, but should not be 401
+        
+        # Registration can have multiple valid outcomes
+        assert response.status_code in [
+            status.HTTP_201_CREATED,           # Success: new user created
+            status.HTTP_409_CONFLICT,          # Expected: user already exists
+            status.HTTP_429_TOO_MANY_REQUESTS  # Expected: rate limited
+        ], f"Unexpected status code: {response.status_code}. Response: {response.json()}"
+        
+        # Ensure it's not requiring authentication
         assert response.status_code != status.HTTP_401_UNAUTHORIZED
         
     @pytest.mark.asyncio
