@@ -1,6 +1,9 @@
 """Authentication endpoints."""
 
-from fastapi import APIRouter, HTTPException, Request, status
+from typing import Annotated
+
+from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from app.config import settings
 from app.dependencies import CurrentUser, DatabaseSession
@@ -9,6 +12,7 @@ from app.schemas.user import TokenResponse, UserCreate, UserLogin, UserResponse
 from app.services.auth import AuthService
 
 router = APIRouter()
+bearer_scheme = HTTPBearer()
 
 
 @router.post(
@@ -141,8 +145,8 @@ async def login(
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
 async def logout(
-    request: Request,
     current_user_id: CurrentUser,
+    token_creds: Annotated[HTTPAuthorizationCredentials, Depends(bearer_scheme)],
 ) -> None:
     """Logout the current user by revoking their token.
 
@@ -152,15 +156,7 @@ async def logout(
 
     from app.services.token_blacklist import get_token_blacklist_service
 
-    # Extract token from request
-    authorization = request.headers.get("Authorization", "")
-    if authorization.startswith("Bearer "):
-        token = authorization[7:]
-    else:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid authorization header",
-        )
+    token = token_creds.credentials
 
     try:
         # Decode token to get JTI and expiration
