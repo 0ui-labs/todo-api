@@ -10,11 +10,7 @@ from slowapi.middleware import SlowAPIMiddleware
 from app.api import admin, auth, categories, tags, todos
 from app.config import settings
 from app.database import engine
-from app.middleware.error_handler import ErrorHandlerMiddleware
-from app.middleware.logging import LoggingMiddleware
-from app.middleware.monitoring import MonitoringMiddleware
 from app.middleware.rate_limit import limiter, setup_rate_limiting
-from app.middleware.security import SecurityHeadersMiddleware
 
 # Configure structured logging
 from app.monitoring.logging_config import get_logger, setup_logging

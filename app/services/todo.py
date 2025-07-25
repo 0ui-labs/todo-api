@@ -7,11 +7,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.models.todo import Todo, TodoStatus
+from app.monitoring.metrics import (
+    todos_completed_total,
+    todos_created_total,
+    todos_deleted_total,
+)
 from app.schemas.todo import TodoCreate, TodoFilter, TodoSort, TodoUpdate
 from app.services.category import CategoryService
 from app.services.tag import TagService
 from app.utils.cache import cache_result, invalidate_cache
-from app.monitoring.metrics import todos_created_total, todos_completed_total, todos_deleted_total
 
 
 class TodoService:
@@ -192,10 +196,10 @@ class TodoService:
 
         todo.deleted_at = datetime.now()
         await self.db.commit()
-        
+
         # Track metric
         todos_deleted_total.inc()
-        
+
         return True
 
     @cache_result("todos", ttl=300)

@@ -29,26 +29,26 @@ def setup_db_metrics(engine: Engine) -> None:
         """Record query start time."""
         conn = kw["conn"]
         conn.info["query_start_time"] = time.time()
-        
+
     @event.listens_for(engine.sync_engine, "after_cursor_execute", named=True)
     def after_cursor_execute(**kw: Any) -> None:
         """Record query metrics."""
         conn = kw["conn"]
         statement = kw["statement"]
-        
+
         # Calculate duration
         start_time = conn.info.pop("query_start_time", None)
         if start_time:
             duration = time.time() - start_time
-            
+
             # Extract operation and table from SQL
             operation = _extract_operation(statement)
             table = _extract_table(statement, operation)
-            
+
             # Record metrics
             db_query_total.labels(operation=operation, table=table).inc()
             db_query_duration_seconds.labels(operation=operation, table=table).observe(duration)
-            
+
             # Log slow queries
             if duration > 1.0:  # Queries taking more than 1 second
                 logger.warning(
@@ -60,23 +60,23 @@ def setup_db_metrics(engine: Engine) -> None:
                         "query": statement[:200],  # First 200 chars
                     }
                 )
-    
+
     # Track connection pool metrics
     @event.listens_for(engine.pool, "connect")
     def on_connect(dbapi_conn: Any, connection_record: Any) -> None:
         """Track new connection creation."""
         _update_pool_metrics(engine.pool)
-        
+
     @event.listens_for(engine.pool, "checkout")
     def on_checkout(dbapi_conn: Any, connection_record: Any, connection_proxy: Any) -> None:
         """Track connection checkout from pool."""
         _update_pool_metrics(engine.pool)
-        
+
     @event.listens_for(engine.pool, "checkin")
     def on_checkin(dbapi_conn: Any, connection_record: Any) -> None:
         """Track connection checkin to pool."""
         _update_pool_metrics(engine.pool)
-        
+
     logger.info("Database metrics collection configured")
 
 
@@ -90,7 +90,7 @@ def _extract_operation(statement: str) -> str:
         Operation type (select, insert, update, delete, other)
     """
     statement_lower = statement.lower().strip()
-    
+
     if statement_lower.startswith("select"):
         return "select"
     elif statement_lower.startswith("insert"):
@@ -120,7 +120,7 @@ def _extract_table(statement: str, operation: str) -> str:
         Table name or "unknown"
     """
     statement_lower = statement.lower()
-    
+
     try:
         if operation == "select":
             # Extract from FROM clause
@@ -129,7 +129,7 @@ def _extract_table(statement: str, operation: str) -> str:
                 rest = statement_lower[from_idx + 6:].strip()
                 table = rest.split()[0].strip('"')
                 return table
-                
+
         elif operation == "insert":
             # Extract from INSERT INTO
             into_idx = statement_lower.find(" into ")
@@ -137,7 +137,7 @@ def _extract_table(statement: str, operation: str) -> str:
                 rest = statement_lower[into_idx + 6:].strip()
                 table = rest.split()[0].strip('"')
                 return table
-                
+
         elif operation in ["update", "delete"]:
             # Extract from UPDATE/DELETE FROM
             parts = statement_lower.split()
@@ -146,11 +146,11 @@ def _extract_table(statement: str, operation: str) -> str:
                 for i, part in enumerate(parts[1:], 1):
                     if part not in ["from", "only"]:
                         return part.strip('"')
-                        
+
     except Exception:
         # Fallback for complex queries
         pass
-        
+
     return "unknown"
 
 

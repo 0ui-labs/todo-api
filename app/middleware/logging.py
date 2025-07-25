@@ -17,27 +17,32 @@ class LoggingMiddleware(BaseHTTPMiddleware):
         self, request: Request, call_next: Callable[[Request], Awaitable[Response]]
     ) -> Response:
         """Process the request and add logging."""
-        from app.monitoring.logging_config import request_id_context, user_id_context, trace_id_context, span_id_context
-        from app.monitoring.tracing import get_trace_id, get_span_id
-        
+        from app.monitoring.logging_config import (
+            request_id_context,
+            span_id_context,
+            trace_id_context,
+            user_id_context,
+        )
+        from app.monitoring.tracing import get_span_id, get_trace_id
+
         # Generate request ID
         request_id = str(uuid.uuid4())
 
         # Add request ID to request state
         request.state.request_id = request_id
-        
+
         # Set context variables for structured logging
         request_id_context.set(request_id)
-        
+
         # Set trace and span IDs if available
         trace_id = get_trace_id()
         if trace_id:
             trace_id_context.set(trace_id)
-        
+
         span_id = get_span_id()
         if span_id:
             span_id_context.set(span_id)
-        
+
         # Try to get user ID from request if authenticated
         user_id = getattr(request.state, "user_id", None)
         if user_id:
@@ -80,7 +85,7 @@ class LoggingMiddleware(BaseHTTPMiddleware):
             )
 
             return response
-            
+
         except Exception as e:
             # Log error with structured data
             process_time = time.time() - start_time

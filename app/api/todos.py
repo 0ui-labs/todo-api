@@ -17,7 +17,6 @@ from app.schemas.todo import (
     TodoUpdate,
 )
 from app.services.todo import TodoService
-from app.monitoring.tracing import trace_async, add_span_attributes
 
 router = APIRouter()
 

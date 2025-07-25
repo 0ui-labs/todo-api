@@ -7,14 +7,13 @@ from typing import Any
 import redis.asyncio as redis
 from redis.exceptions import RedisError
 
-from app.config import settings
-from app.redis import get_redis_client
 from app.monitoring.metrics import (
     cache_deletes_total,
     cache_hits_total,
     cache_misses_total,
     cache_sets_total,
 )
+from app.redis import get_redis_client
 
 
 class CacheService:

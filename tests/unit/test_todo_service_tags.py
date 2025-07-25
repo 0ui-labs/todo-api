@@ -186,7 +186,7 @@ async def test_delete_tag(async_session, test_user: User):
     # Delete the tag
     deleted = await tag_service.delete(tag.id)
     assert deleted is True
-    
+
     # Verify it's gone
     deleted_tag = await tag_service.get_by_id(tag.id)
     assert deleted_tag is None

@@ -16,7 +16,7 @@ def trace_async(span_name: str | None = None):
     def decorator(func: Callable) -> Callable:
         tracer = trace.get_tracer(__name__)
         actual_span_name = span_name or func.__name__
-        
+
         @wraps(func)
         async def wrapper(*args: Any, **kwargs: Any) -> Any:
             with tracer.start_as_current_span(actual_span_name) as span:
@@ -27,7 +27,7 @@ def trace_async(span_name: str | None = None):
                     for key, value in kwargs.items():
                         if isinstance(value, (str, int, float, bool)):
                             span.set_attribute(f"arg.{key}", value)
-                
+
                 try:
                     result = await func(*args, **kwargs)
                     span.set_status(Status(StatusCode.OK))
@@ -38,7 +38,7 @@ def trace_async(span_name: str | None = None):
                     )
                     span.record_exception(e)
                     raise
-        
+
         return wrapper
     return decorator
 
@@ -52,7 +52,7 @@ def trace_sync(span_name: str | None = None):
     def decorator(func: Callable) -> Callable:
         tracer = trace.get_tracer(__name__)
         actual_span_name = span_name or func.__name__
-        
+
         @wraps(func)
         def wrapper(*args: Any, **kwargs: Any) -> Any:
             with tracer.start_as_current_span(actual_span_name) as span:
@@ -63,7 +63,7 @@ def trace_sync(span_name: str | None = None):
                     for key, value in kwargs.items():
                         if isinstance(value, (str, int, float, bool)):
                             span.set_attribute(f"arg.{key}", value)
-                
+
                 try:
                     result = func(*args, **kwargs)
                     span.set_status(Status(StatusCode.OK))
@@ -74,7 +74,7 @@ def trace_sync(span_name: str | None = None):
                     )
                     span.record_exception(e)
                     raise
-        
+
         return wrapper
     return decorator
 

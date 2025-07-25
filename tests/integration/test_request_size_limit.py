@@ -11,13 +11,13 @@ async def test_request_size_limit_small_payload(test_user_headers):
     async with AsyncClient(app=app, base_url="http://test") as client:
         # Create a small payload (less than 10MB)
         small_data = {"title": "Test Todo", "description": "A" * 1000}
-        
+
         response = await client.post(
             "/api/v1/todos",
             json=small_data,
             headers=test_user_headers
         )
-        
+
         assert response.status_code == 201
 
 
@@ -29,19 +29,19 @@ async def test_request_size_limit_large_payload(test_user_headers):
         # 11MB of data
         large_description = "A" * (11 * 1024 * 1024)
         large_data = {"title": "Test Todo", "description": large_description}
-        
+
         # Manually set content-length header to simulate large request
         headers = {
             **test_user_headers,
             "Content-Length": str(11 * 1024 * 1024)
         }
-        
+
         response = await client.post(
             "/api/v1/todos",
             json=large_data,
             headers=headers
         )
-        
+
         assert response.status_code == 413
         assert response.json()["detail"] == "Request too large"
 
@@ -54,12 +54,12 @@ async def test_request_size_limit_exact_10mb():
         headers = {
             "Content-Length": str(10 * 1024 * 1024)
         }
-        
+
         response = await client.get(
             "/health",
             headers=headers
         )
-        
+
         # Should not reject as it's exactly at the limit
         assert response.status_code == 200
 
@@ -72,12 +72,12 @@ async def test_request_size_limit_just_over_10mb():
         headers = {
             "Content-Length": str(10 * 1024 * 1024 + 1)
         }
-        
+
         response = await client.get(
             "/health",
             headers=headers
         )
-        
+
         assert response.status_code == 413
         assert response.json()["detail"] == "Request too large"
 
@@ -88,5 +88,5 @@ async def test_request_size_limit_no_content_length():
     async with AsyncClient(app=app, base_url="http://test") as client:
         # Request without content-length header should be allowed
         response = await client.get("/health")
-        
+
         assert response.status_code == 200

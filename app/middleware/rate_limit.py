@@ -12,7 +12,6 @@ from starlette.responses import JSONResponse, Response
 
 from app.config import settings
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -91,7 +90,7 @@ rate_limit_admin = create_rate_limit_decorator("10/minute")
 # Endpoint-specific limiters using configuration
 class RateLimiters:
     """Centralized rate limiters for different endpoints."""
-    
+
     # Authentication endpoints
     auth_register = limiter.limit(
         lambda: settings.rate_limit_auth_register or "10/hour"
@@ -99,28 +98,28 @@ class RateLimiters:
     auth_login = limiter.limit(
         lambda: settings.rate_limit_auth_login or "5/minute"
     )
-    
+
     # Todo endpoints (simplified)
     todo_create = limiter.limit("30/minute")
-    todo_list = limiter.limit("60/minute") 
+    todo_list = limiter.limit("60/minute")
     todo_get = limiter.limit("100/minute")
     todo_update = limiter.limit("30/minute")
     todo_delete = limiter.limit("20/minute")
     todo_bulk = limiter.limit("5/minute")
-    
+
     # Category endpoints
     category_create = limiter.limit("20/minute")
     category_list = limiter.limit("60/minute")
     category_get = limiter.limit("100/minute")
     category_update = limiter.limit("20/minute")
     category_delete = limiter.limit("10/minute")
-    
+
     # Tag endpoints
     tag_create = limiter.limit("30/minute")
     tag_list = limiter.limit("60/minute")
     tag_update = limiter.limit("30/minute")
     tag_delete = limiter.limit("20/minute")
-    
+
     # Admin endpoints
     admin_list = limiter.limit("60/minute")
     admin_action = limiter.limit("30/minute")

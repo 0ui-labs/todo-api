@@ -1,8 +1,7 @@
 """Request-related middleware."""
 import logging
-from typing import Optional
 
-from fastapi import Request, Response
+from fastapi import Request
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.types import ASGIApp
@@ -14,11 +13,11 @@ logger = logging.getLogger(__name__)
 
 class RequestSizeLimitMiddleware(BaseHTTPMiddleware):
     """Middleware to limit request body size."""
-    
+
     def __init__(
-        self, 
+        self,
         app: ASGIApp,
-        max_size: Optional[int] = None,
+        max_size: int | None = None,
         error_message: str = "Request body too large",
         include_max_size_in_error: bool = True
     ):
@@ -35,11 +34,11 @@ class RequestSizeLimitMiddleware(BaseHTTPMiddleware):
         self.max_size = max_size or settings.max_request_size
         self.error_message = error_message
         self.include_max_size_in_error = include_max_size_in_error
-    
+
     async def dispatch(self, request: Request, call_next):
         """Check request size before processing."""
         content_length = request.headers.get("content-length")
-        
+
         if content_length:
             try:
                 size = int(content_length)
@@ -48,16 +47,16 @@ class RequestSizeLimitMiddleware(BaseHTTPMiddleware):
                         f"Request size {size} exceeds limit {self.max_size} "
                         f"from {request.client.host}"
                     )
-                    
+
                     error_detail = {
                         "detail": self.error_message,
                         "type": "request_too_large"
                     }
-                    
+
                     if self.include_max_size_in_error:
                         error_detail["max_size_bytes"] = self.max_size
                         error_detail["max_size_mb"] = round(self.max_size / 1024 / 1024, 2)
-                    
+
                     return JSONResponse(
                         status_code=413,
                         content=error_detail
@@ -68,18 +67,18 @@ class RequestSizeLimitMiddleware(BaseHTTPMiddleware):
                     status_code=400,
                     content={"detail": "Invalid Content-Length header"}
                 )
-        
+
         response = await call_next(request)
         return response
 
 
 class RequestTimeoutMiddleware(BaseHTTPMiddleware):
     """Middleware to enforce request timeouts."""
-    
+
     def __init__(
         self,
         app: ASGIApp,
-        timeout: Optional[int] = None
+        timeout: int | None = None
     ):
         """
         Initialize the middleware.
@@ -90,7 +89,7 @@ class RequestTimeoutMiddleware(BaseHTTPMiddleware):
         """
         super().__init__(app)
         self.timeout = timeout or settings.request_timeout
-    
+
     async def dispatch(self, request: Request, call_next):
         """Enforce timeout on request processing."""
         # Implementation would use asyncio.timeout

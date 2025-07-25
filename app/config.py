@@ -71,7 +71,7 @@ class Settings(BaseSettings):
     rate_limit_enabled: bool = True
     rate_limit_per_minute: int = 100
     rate_limit_per_hour: int = 1000
-    
+
     # Endpoint-specific limits (non-tier)
     rate_limit_auth_register: str = "10/hour"
     rate_limit_auth_login: str = "5/minute"
@@ -83,7 +83,7 @@ class Settings(BaseSettings):
         default=True,
         description="Enable/disable all custom middleware"
     )
-    
+
     # Request Middleware Settings
     max_request_size: int = Field(
         default=10 * 1024 * 1024,  # 10MB
@@ -91,36 +91,36 @@ class Settings(BaseSettings):
         ge=1024,  # Minimum 1KB
         le=100 * 1024 * 1024  # Maximum 100MB
     )
-    
+
     request_timeout: int = Field(
         default=30,
         description="Request timeout in seconds",
         ge=1,
         le=300
     )
-    
+
     request_size_error_message: str = Field(
         default="Request body too large",
         description="Custom error message for oversized requests"
     )
-    
+
     # Security Middleware Settings
     security_headers_enabled: bool = Field(
         default=True,
         description="Enable security headers middleware"
     )
-    
+
     trusted_hosts: list[str] = Field(
         default_factory=lambda: ["localhost", "127.0.0.1"],
         description="List of trusted host headers"
     )
-    
+
     # Monitoring Middleware Settings
     request_logging_enabled: bool = Field(
         default=True,
         description="Enable request/response logging"
     )
-    
+
     metrics_collection_enabled: bool = Field(
         default=True,
         description="Enable metrics collection"

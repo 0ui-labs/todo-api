@@ -17,7 +17,7 @@ class TestSecretKeyValidation:
         with patch.dict(os.environ, {"ENVIRONMENT": "production"}, clear=True):
             with pytest.raises(ValueError) as exc_info:
                 Settings(environment="production", secret_key=None)
-            
+
             assert "SECRET_KEY is required in production" in str(exc_info.value)
 
     def test_development_generates_warning(self, caplog):

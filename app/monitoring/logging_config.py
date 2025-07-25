@@ -1,5 +1,4 @@
 """Structured logging configuration with JSON formatting."""
-import json
 import logging
 import sys
 from contextvars import ContextVar
@@ -16,7 +15,7 @@ span_id_context: ContextVar[str | None] = ContextVar("span_id", default=None)
 
 class ContextFilter(logging.Filter):
     """Filter to add context variables to log records."""
-    
+
     def filter(self, record: logging.LogRecord) -> bool:
         """Add context variables to the log record."""
         record.request_id = request_id_context.get()
@@ -28,31 +27,31 @@ class ContextFilter(logging.Filter):
 
 class CustomJsonFormatter(jsonlogger.JsonFormatter):
     """Custom JSON formatter with additional fields."""
-    
+
     def add_fields(self, log_record: dict[str, Any], record: logging.LogRecord, message_dict: dict[str, Any]) -> None:
         """Add custom fields to the log record."""
         super().add_fields(log_record, record, message_dict)
-        
+
         # Add timestamp in ISO format
         log_record["timestamp"] = self.formatTime(record, self.datefmt)
-        
+
         # Add severity (uppercase level name)
         log_record["severity"] = record.levelname
-        
+
         # Add logger name
         log_record["logger"] = record.name
-        
+
         # Add source location
         log_record["source"] = {
             "file": record.pathname,
             "line": record.lineno,
             "function": record.funcName
         }
-        
+
         # Add exception info if present
         if record.exc_info:
             log_record["exception"] = self.formatException(record.exc_info)
-        
+
         # Remove redundant fields
         for field in ["levelname", "pathname", "lineno", "funcName", "exc_info", "exc_text"]:
             log_record.pop(field, None)
@@ -73,10 +72,10 @@ def setup_logging(
     # Clear existing handlers
     root_logger = logging.getLogger()
     root_logger.handlers.clear()
-    
+
     # Create handler
     handler = logging.StreamHandler(sys.stdout)
-    
+
     if json_logs:
         # JSON formatter for production
         formatter = CustomJsonFormatter(
@@ -89,24 +88,24 @@ def setup_logging(
             "%(asctime)s - %(name)s - %(levelname)s - [%(request_id)s] - %(message)s",
             datefmt="%Y-%m-%d %H:%M:%S"
         )
-    
+
     handler.setFormatter(formatter)
-    
+
     # Add context filter
     handler.addFilter(ContextFilter())
-    
+
     # Configure root logger
     root_logger.addHandler(handler)
     root_logger.setLevel(getattr(logging, level.upper()))
-    
+
     # Set service name as extra field
     logging.LoggerAdapter(root_logger, {"service": service_name})
-    
+
     # Reduce noise from third-party libraries
     logging.getLogger("uvicorn.access").setLevel(logging.WARNING)
     logging.getLogger("sqlalchemy.engine").setLevel(logging.WARNING)
     logging.getLogger("httpx").setLevel(logging.WARNING)
-    
+
     # Log startup message
     root_logger.info(
         "Logging configured",
