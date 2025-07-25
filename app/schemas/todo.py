@@ -140,17 +140,5 @@ class TodoFilter(BaseSchema):
         return v
 
 
-class TodoSort(BaseSchema):
-    """Schema for todo sorting."""
 
-    sort_by: str = Field(
-        default="created_at",
-        pattern="^(created_at|due_date|title|updated_at)$",
-        description="Field to sort by"
-    )
-    order: str = Field(
-        default="desc",
-        pattern="^(asc|desc)$",
-        description="Sort order"
-    )
 

@@ -12,7 +12,7 @@ from app.monitoring.metrics import (
     todos_created_total,
     todos_deleted_total,
 )
-from app.schemas.todo import TodoCreate, TodoFilter, TodoSort, TodoUpdate
+from app.schemas.todo import TodoCreate, TodoFilter, TodoUpdate
 from app.services.category import CategoryService
 from app.services.tag import TagService
 from app.utils.cache import cache_result, invalidate_cache
@@ -92,7 +92,8 @@ class TodoService:
         limit: int = 20,
         offset: int = 0,
         filter_params: TodoFilter | None = None,
-        sort_params: TodoSort | None = None,
+        sort_by: str = "created_at",
+        order: str = "desc",
     ) -> tuple[list[Todo], int]:
         """Get all todos for a user with pagination and filtering."""
         # Base query
@@ -129,14 +130,11 @@ class TodoService:
         total = total_result.scalar_one()
 
         # Apply sorting
-        if sort_params:
-            sort_column = getattr(Todo, sort_params.sort_by)
-            if sort_params.order == "desc":
-                query = query.order_by(sort_column.desc())
-            else:
-                query = query.order_by(sort_column.asc())
+        sort_column = getattr(Todo, sort_by, Todo.created_at)
+        if order == "desc":
+            query = query.order_by(sort_column.desc())
         else:
-            query = query.order_by(Todo.created_at.desc())
+            query = query.order_by(sort_column.asc())
 
         # Apply pagination
         query = query.limit(limit).offset(offset)

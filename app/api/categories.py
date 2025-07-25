@@ -1,5 +1,6 @@
 """Category endpoints."""
 
+from enum import Enum
 from typing import Annotated
 from uuid import UUID
 
@@ -16,6 +17,15 @@ from app.schemas.category import (
 )
 from app.services.category import CategoryService
 
+
+class CategorySortFields(str, Enum):
+    NAME = "name"
+    CREATED_AT = "created_at"
+
+
+class SortOrder(str, Enum):
+    ASC = "asc"
+    DESC = "desc"
 router = APIRouter()
 
 
@@ -70,8 +80,8 @@ async def get_categories(
     db: DatabaseSession,
     pagination: Annotated[PaginationParams, Depends()],
     search: str | None = None,
-    sort_by: str = "created_at",
-    order: str = "desc",
+    sort_by: CategorySortFields = CategorySortFields.CREATED_AT,
+    order: SortOrder = SortOrder.DESC,
 ) -> CategoryListResponse:
     """Get all categories with pagination and filtering."""
     service = CategoryService(db)
@@ -80,8 +90,8 @@ async def get_categories(
         limit=pagination.limit,
         offset=pagination.offset,
         search=search,
-        sort_by=sort_by,
-        order=order,
+        sort_by=sort_by.value,
+        order=order.value,
     )
 
     return CategoryListResponse(

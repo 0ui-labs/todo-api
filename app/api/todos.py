@@ -1,4 +1,5 @@
 """Todo endpoints."""
+from enum import Enum
 from typing import Annotated
 from uuid import UUID
 
@@ -13,10 +14,21 @@ from app.schemas.todo import (
     TodoFilter,
     TodoListResponse,
     TodoResponse,
-    TodoSort,
     TodoUpdate,
 )
 from app.services.todo import TodoService
+
+
+class TodoSortFields(str, Enum):
+    CREATED_AT = "created_at"
+    DUE_DATE = "due_date"
+    TITLE = "title"
+    UPDATED_AT = "updated_at"
+
+
+class SortOrder(str, Enum):
+    ASC = "asc"
+    DESC = "desc"
 
 router = APIRouter()
 
@@ -71,8 +83,8 @@ async def get_todos(
     status: TodoStatus | None = None,
     category_id: UUID | None = None,
     search: str | None = None,
-    sort_by: str = "created_at",
-    order: str = "desc",
+    sort_by: TodoSortFields = TodoSortFields.CREATED_AT,
+    order: SortOrder = SortOrder.DESC,
 ) -> TodoListResponse:
     """Get all todos with pagination and filtering."""
     # Create filter and sort objects
@@ -84,15 +96,14 @@ async def get_todos(
             search=search
         )
 
-    sort_params = TodoSort(sort_by=sort_by, order=order)
-
     service = TodoService(db)
     todos, total = await service.get_todos(
         user_id=UUID(current_user),
         limit=pagination.limit,
         offset=pagination.offset,
         filter_params=filter_params,
-        sort_params=sort_params,
+        sort_by=sort_by.value,
+        order=order.value,
     )
 
     return TodoListResponse(

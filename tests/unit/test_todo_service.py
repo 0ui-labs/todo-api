@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.category import Category
 from app.models.todo import Todo, TodoStatus
-from app.schemas.todo import TodoCreate, TodoFilter, TodoSort, TodoUpdate
+from app.schemas.todo import TodoCreate, TodoFilter, TodoUpdate
 from app.services.todo import TodoService
 
 pytestmark = pytest.mark.asyncio
@@ -210,13 +210,11 @@ class TestTodoService:
 
         mock_db.execute.side_effect = [count_result, todos_result]
 
-        # Create sort params
-        sort_params = TodoSort(sort_by="created_at", order="desc")
-
-        # Call the method
+        # Call the method with sort parameters
         todos, total = await todo_service.get_todos(
             sample_user_id,
-            sort_params=sort_params
+            sort_by="created_at",
+            order="desc"
         )
 
         # Verify results

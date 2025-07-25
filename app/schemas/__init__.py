@@ -17,7 +17,6 @@ from app.schemas.todo import (
     TodoFilter,
     TodoListResponse,
     TodoResponse,
-    TodoSort,
     TodoUpdate,
 )
 from app.schemas.user import (
@@ -51,7 +50,6 @@ __all__ = [
     "TodoResponse",
     "TodoListResponse",
     "TodoFilter",
-    "TodoSort",
     # Tag
     "TagCreate",
     "TagUpdate",
