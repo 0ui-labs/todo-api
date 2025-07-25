@@ -156,6 +156,15 @@ class Settings(BaseSettings):
         if len(secret) < 64:
             raise ValueError("JWT secret key must be at least 64 characters long")
 
+        # Check entropy based on unique characters
+        unique_chars = len(set(secret))
+        if unique_chars < 16:
+            raise ValueError(
+                "JWT secret key lacks sufficient complexity "
+                "(too few unique characters). "
+                "Use a cryptographically secure random string."
+            )
+
         # Check for weak patterns
         weak_patterns = [
             r"^[a-zA-Z]+$",  # Only letters

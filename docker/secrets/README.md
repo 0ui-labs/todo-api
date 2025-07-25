@@ -26,10 +26,26 @@ echo -n "your_secure_redis_password" > redis_password.txt
 
 ### 4. `jwt_secret_key.txt`
 JWT secret key for token signing (no newline at end)
+
+**⚠️ IMPORTANT: The JWT secret key must meet strict entropy requirements:**
+- Minimum 64 characters length
+- Minimum 16 unique characters
+- Must be cryptographically secure
+
 ```bash
 # Generate a secure random key:
-python -c "import secrets; print(secrets.token_urlsafe(64))" | tr -d '\n' > jwt_secret_key.txt
+python -c "import secrets; print(secrets.token_urlsafe(64))" | tr -d '
+' > jwt_secret_key.txt
+
+# Alternative: Using OpenSSL
+openssl rand -base64 64 | tr -d '
+=' > jwt_secret_key.txt
+
+# Verify entropy (should show 16+ unique chars):
+python -c "key=open('jwt_secret_key.txt').read(); print(f'Unique chars: {len(set(key))}')"
 ```
+
+**Never use simple patterns like "aaaa...aaaa" or dictionary words!**
 
 ## Security Best Practices
 

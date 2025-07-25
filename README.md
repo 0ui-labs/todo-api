@@ -194,11 +194,20 @@ This will start:
 
 ### SECRET_KEY Setup (Required for Production)
 
-The SECRET_KEY is critical for JWT token security. 
+The SECRET_KEY is critical for JWT token security and must meet strict entropy requirements.
 
-**Generate a secure key:**
+**Generate a cryptographically secure key:**
 ```bash
+# Recommended: Use the provided script
 python scripts/generate_secret_key.py
+
+# Alternative methods:
+# Using Python
+python -c "import secrets; print(secrets.token_urlsafe(64))"
+
+# Using OpenSSL
+openssl rand -base64 64 | tr -d '
+='
 ```
 
 **Set in environment:**
@@ -208,10 +217,15 @@ SECRET_KEY="your-generated-64-character-key"
 ```
 
 **Production Requirements:**
-- Minimum 64 characters
-- High entropy (no patterns)
+- Minimum 64 characters length
+- Minimum 16 unique characters (entropy check)
+- Cryptographically secure random generation
+- No weak patterns (repeated chars, dictionary words)
 - Unique per environment
 - Never commit to git
+
+**⚠️ Security Warning:**
+The API now enforces entropy validation. Keys like "aaaa...aaaa" or simple patterns will be rejected even if they meet the length requirement. Always use cryptographically secure random generators.
 
 ## Testing
 

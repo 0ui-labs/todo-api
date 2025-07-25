@@ -38,20 +38,27 @@ class TestSecretKeyValidation:
     def test_secret_key_weak_patterns(self):
         """SECRET_KEY must not contain weak patterns."""
         weak_keys = [
-            "a" * 64,  # Only letters
-            "1" * 64,  # Only numbers
-            "x" * 64,  # Repeating characters
-            "secretsecretsecretsecretsecretsecretsecretsecretsecretsecret123",  # Contains 'secret'
-            "passwordpasswordpasswordpasswordpasswordpasswordpasswordpass123",  # Contains 'password'
+            "a" * 64,  # Only letters (low entropy)
+            "1" * 64,  # Only numbers (low entropy)
+            "x" * 64,  # Repeating characters (low entropy)
+            "abcdef123456" * 6,  # Repetitive pattern, low entropy
+            # Contains 'secret'
+            "secretsecretsecretsecretsecretsecretsecretsecretsecretsecret123",
+            # Contains 'password'
+            "passwordpasswordpasswordpasswordpasswordpasswordpasswordpass123",
         ]
 
         for weak_key in weak_keys:
             with pytest.raises(ValidationError) as exc_info:
                 Settings(secret_key=SecretStr(weak_key))
 
-            # Check for either length or pattern error (length is checked first)
+            # Check for either length, pattern, or entropy error
             error_str = str(exc_info.value)
-            assert ("weak patterns" in error_str or "at least 64 characters" in error_str)
+            assert (
+                "weak patterns" in error_str
+                or "at least 64 characters" in error_str
+                or "lacks sufficient complexity" in error_str
+            )
 
     def test_valid_secret_key(self):
         """Valid SECRET_KEY should pass validation."""
@@ -62,7 +69,8 @@ class TestSecretKeyValidation:
 
     def test_environment_default_is_development(self):
         """Default environment should be development."""
-        settings = Settings(secret_key=SecretStr("a" * 64 + "1B2c3D4e5F"))
+        key = "aB1cD2eF3gH4iJ5kL6mN7oP8qR9sT0uVwXyZ" * 2
+        settings = Settings(secret_key=SecretStr(key))
         assert settings.environment == "development"
 
     def test_production_with_valid_key(self):
