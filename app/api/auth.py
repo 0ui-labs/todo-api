@@ -1,15 +1,20 @@
 """Authentication endpoints."""
 
+import logging
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from jose import JWTError
+from redis.exceptions import RedisError
 
 from app.config import settings
 from app.dependencies import CurrentUser, DatabaseSession
 from app.middleware.rate_limit import RateLimiters
 from app.schemas.user import TokenResponse, UserCreate, UserLogin, UserResponse
 from app.services.auth import AuthService
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 bearer_scheme = HTTPBearer()
@@ -182,10 +187,25 @@ async def logout(
                 user_id=current_user_id,
                 exp=exp_datetime
             )
+    except JWTError as e:
+        # Ein ungültiges Token ist kein Serverfehler, sollte aber geloggt werden.
+        logger.warning(
+            f"JWTError during logout, token might be invalid: {e}", exc_info=True
+        )
+        # Trotzdem erfolgreich für den Client, da er sich abmelden wollte.
+        pass
+    except RedisError as e:
+        # Ein Redis-Fehler ist ein kritisches Infrastrukturproblem.
+        logger.error(
+            f"RedisError during logout, token could not be blacklisted: {e}",
+            exc_info=True
+        )
+        # Trotzdem erfolgreich für den Client.
+        pass
     except Exception as e:
-        # Log error but don't fail the logout
-        print(f"Error during logout: {e}")
-        # Even if blacklisting fails, we return success to the user
+        # Fängt alle anderen unerwarteten Fehler ab.
+        logger.exception(f"An unexpected error occurred during logout: {e}")
+        # Trotzdem erfolgreich für den Client.
         pass
 
 
