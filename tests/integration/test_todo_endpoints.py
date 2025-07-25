@@ -100,7 +100,7 @@ class TestTodoEndpoints:
     ):
         """Test listing todos with pagination."""
         response = await client.get(
-            "/api/v1/todos/?skip=0&limit=10",
+            "/api/v1/todos/?offset=0&limit=10",
             headers=auth_headers
         )
         assert response.status_code == 200
