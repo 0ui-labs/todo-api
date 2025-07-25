@@ -44,7 +44,7 @@ async def create_access_token_async(
 
     encoded_jwt = jwt.encode(
         to_encode,
-        settings.secret_key.get_secret_value(),
+        settings.secret_key.get_secret_value() if settings.secret_key else "",
         algorithm=settings.algorithm
     )
     return str(encoded_jwt)

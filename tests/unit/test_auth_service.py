@@ -1,5 +1,5 @@
 """Unit tests for authentication service."""
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
 
 import pytest
@@ -174,21 +174,26 @@ class TestAuthService:
         # Verify result
         assert result is None
 
-    def test_create_user_token(self, auth_service, sample_user):
+    async def test_create_user_token(self, auth_service, sample_user):
         """Test user token creation."""
-        # Call the method
-        token, expires_in = auth_service.create_user_token(sample_user.id)
+        # Mock token blacklist service
+        mock_blacklist = AsyncMock()
+        mock_blacklist.get_user_token_version.return_value = 1
 
-        # Decode token to verify
-        payload = jwt.decode(
-            token,
-            settings.secret_key.get_secret_value(),
-            algorithms=[settings.algorithm]
-        )
+        with patch('app.services.token_blacklist.get_token_blacklist_service', return_value=mock_blacklist):
+            # Call the method
+            token, expires_in = await auth_service.create_user_token(sample_user.id)
 
-        assert payload["sub"] == str(sample_user.id)
-        assert "exp" in payload
-        assert expires_in == settings.access_token_expire_minutes * 60
+            # Verify token contains correct version
+            payload = jwt.decode(
+                token,
+                settings.secret_key.get_secret_value(),
+                algorithms=[settings.algorithm]
+            )
+            assert payload["sub"] == str(sample_user.id)
+            assert payload["token_version"] == 1
+            assert "exp" in payload
+            assert expires_in == settings.access_token_expire_minutes * 60
 
     async def test_get_user_by_id_success(self, auth_service, mock_db, sample_user):
         """Test getting user by ID."""

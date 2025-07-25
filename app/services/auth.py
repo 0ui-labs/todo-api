@@ -7,13 +7,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
 from app.models.user import User
+from app.monitoring.metrics import users_login_total, users_registered_total
 from app.schemas.user import UserCreate
+from app.utils.jwt_utils import create_access_token_async as create_access_token
 from app.utils.security import (
-    create_access_token,
     get_password_hash,
     verify_password,
 )
-from app.monitoring.metrics import users_registered_total, users_login_total
 
 
 class AuthService:
@@ -44,7 +44,7 @@ class AuthService:
         self.db.add(user)
         await self.db.commit()
         await self.db.refresh(user)
-        
+
         # Track metric
         users_registered_total.inc()
 
@@ -78,13 +78,12 @@ class AuthService:
     async def create_user_token(self, user_id: UUID) -> tuple[str, int]:
         """Create an access token for a user."""
         from app.services.token_blacklist import get_token_blacklist_service
-        from app.utils.jwt_utils import create_access_token_async
-        
+
         # Get user's current token version
         blacklist_service = await get_token_blacklist_service()
         token_version = await blacklist_service.get_user_token_version(str(user_id))
-        
-        access_token = await create_access_token_async(
+
+        access_token = await create_access_token(
             data={"sub": str(user_id)},
             expires_delta=timedelta(minutes=settings.access_token_expire_minutes),
             token_version=token_version
