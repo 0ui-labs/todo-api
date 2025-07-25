@@ -50,6 +50,9 @@ class Settings(BaseSettings):
     redis_port: int = Field(default=6379)
     redis_db: int = Field(default=0)
     redis_rate_limit_db: int = Field(default=1)
+    redis_cache_db: int = Field(
+        default=2, description="Redis database number for caching"
+    )
     redis_url_override: str | None = Field(default=None)
 
     # Environment settings

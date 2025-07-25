@@ -209,3 +209,20 @@ async def test_hash_dict():
 
     assert hash1 == hash2
     assert len(hash1) == 32  # MD5 hash length
+
+@pytest.mark.asyncio
+@patch('app.services.cache.get_redis_client')
+async def test_cache_service_uses_configured_db(mock_get_redis_client):
+    """Test that CacheService uses the redis_cache_db from settings."""
+    from unittest.mock import patch
+
+    from app.config import settings
+
+    # Temporär einen anderen Wert für die DB setzen
+    with patch.object(settings, 'redis_cache_db', 5):
+        # CacheService *nach* dem Patch instanziieren
+        service = CacheService()
+        await service._get_redis()  # Internen Redis-Client initialisieren
+
+    # Überprüfen, ob get_redis_client mit der konfigurierten DB aufgerufen wurde
+    mock_get_redis_client.assert_called_once_with(5)

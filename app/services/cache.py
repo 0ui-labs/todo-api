@@ -7,6 +7,7 @@ from typing import Any
 import redis.asyncio as redis
 from redis.exceptions import RedisError
 
+from app.config import settings
 from app.monitoring.metrics import (
     cache_deletes_total,
     cache_hits_total,
@@ -29,7 +30,7 @@ class CacheService:
         self._redis = redis_client
         self._prefix = "cache:"
         # Use a dedicated DB for cache (different from rate limiting)
-        self._cache_db = 2  # Using DB 2 for cache
+        self._cache_db = settings.redis_cache_db
 
     async def _get_redis(self) -> redis.Redis:
         """Get or create Redis client."""
