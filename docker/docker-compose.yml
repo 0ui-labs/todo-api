@@ -43,7 +43,7 @@ services:
       SECRET_KEY: ${SECRET_KEY:?SECRET_KEY is required}
       DATABASE_URL: postgresql+asyncpg://${DATABASE_USER}:${DATABASE_PASSWORD}@postgres:${DATABASE_PORT}/${DATABASE_NAME}
       REDIS_URL: redis://redis:${REDIS_PORT}/${REDIS_DB}
-      RATE_LIMIT_ENABLED: "false"
+      RATE_LIMIT_ENABLED: "true"
     depends_on:
       postgres:
         condition: service_healthy

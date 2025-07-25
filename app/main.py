@@ -103,8 +103,7 @@ from app.middleware.registry import create_middleware_registry
 middleware_registry = create_middleware_registry()
 middleware_registry.apply_to_app(app)
 
-# Add SlowAPI middleware (must be after other middleware)
-app.add_middleware(SlowAPIMiddleware)
+# SlowAPI middleware is already added in setup_rate_limiting()
 
 
 

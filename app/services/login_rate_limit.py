@@ -101,9 +101,13 @@ class LoginRateLimitService:
 
             return current_attempts, None
 
-        except RedisError as e:
+        except (RedisError, OSError, ConnectionError) as e:
             logger.error(f"Redis error in record_failed_attempt: {e}")
             # In case of Redis failure, don't block login attempts
+            # But log the issue for monitoring
+            logger.warning(
+                f"Unable to record failed login attempt for {email} due to Redis error"
+            )
             return 0, None
 
     async def check_rate_limit(self, email: str) -> tuple[bool, datetime | None, int]:
@@ -136,9 +140,10 @@ class LoginRateLimitService:
             current_attempts = await client.get(attempts_key) or "0"
             return True, None, int(current_attempts)
 
-        except RedisError as e:
+        except (RedisError, OSError, ConnectionError) as e:
             logger.error(f"Redis error in check_rate_limit: {e}")
             # In case of Redis failure, allow login attempts
+            # This prevents Redis issues from completely blocking login
             return True, None, 0
 
     async def clear_failed_attempts(self, email: str) -> None:
@@ -157,8 +162,10 @@ class LoginRateLimitService:
 
             logger.info(f"Cleared failed login attempts for {email}")
 
-        except RedisError as e:
+        except (RedisError, OSError, ConnectionError) as e:
             logger.error(f"Redis error in clear_failed_attempts: {e}")
+            # Log but don't fail - successful login should not be blocked
+            # by Redis issues
 
     async def unlock_account(self, email: str) -> bool:
         """Manually unlock a locked account (admin function).
