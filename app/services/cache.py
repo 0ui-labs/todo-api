@@ -33,10 +33,15 @@ class CacheService:
         self._cache_db = settings.redis_cache_db
 
     async def _get_redis(self) -> redis.Redis:
-        """Get or create Redis client."""
-        if self._redis is None:
-            self._redis = await get_redis_client(self._cache_db)
-        return self._redis
+        """Get Redis client from connection pool.
+        
+        If a client was injected (for testing), use it.
+        Otherwise, always returns a fresh client from the pool to avoid
+        'Buffer is closed' errors from stale connections.
+        """
+        if self._redis is not None:
+            return self._redis
+        return await get_redis_client(self._cache_db)
 
     def _make_key(self, namespace: str, key: str) -> str:
         """Create a cache key with namespace."""
@@ -203,8 +208,13 @@ class CacheService:
         return value
 
     async def close(self) -> None:
-        """Close the Redis connection."""
-        if self._redis:
+        """Close method for compatibility.
+        
+        If a client was injected (for testing), close it.
+        Otherwise, this is a no-op since the connection pool
+        manages connections automatically.
+        """
+        if self._redis is not None:
             await self._redis.close()
 
 

@@ -25,10 +25,15 @@ class TokenBlacklistService:
         self._user_version_prefix = "user_token_version:"
 
     async def _get_redis(self) -> redis.Redis:
-        """Get or create Redis client."""
-        if self._redis is None:
-            self._redis = await get_redis_client(settings.redis_db)
-        return self._redis
+        """Get Redis client from connection pool.
+        
+        If a client was injected (for testing), use it.
+        Otherwise, always returns a fresh client from the pool to avoid
+        'Buffer is closed' errors from stale connections.
+        """
+        if self._redis is not None:
+            return self._redis
+        return await get_redis_client(settings.redis_db)
 
     async def add_token_to_blacklist(
         self,
@@ -150,8 +155,13 @@ class TokenBlacklistService:
         return 0
 
     async def close(self) -> None:
-        """Close the Redis connection."""
-        if self._redis:
+        """Close method for compatibility.
+        
+        If a client was injected (for testing), close it.
+        Otherwise, this is a no-op since the connection pool
+        manages connections automatically.
+        """
+        if self._redis is not None:
             await self._redis.close()
 
 

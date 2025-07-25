@@ -37,11 +37,7 @@ def get_redis_pool(db: int = 0) -> ConnectionPool:
             max_connections=50,  # Maximum number of connections
             health_check_interval=30,  # Health check every 30 seconds
             socket_keepalive=True,  # Enable TCP keepalive
-            socket_keepalive_options={
-                1: 1,  # TCP_KEEPIDLE: 1 second
-                2: 3,  # TCP_KEEPINTVL: 3 seconds
-                3: 5,  # TCP_KEEPCNT: 5 probes
-            },
+            # Remove socket_keepalive_options as they cause OSError on some systems
             retry_on_timeout=True,  # Retry on timeout
             retry_on_error=[ConnectionError, TimeoutError],  # Retry on these errors
         )
