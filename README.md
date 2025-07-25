@@ -7,7 +7,7 @@ A production-ready REST API for managing todos with JWT authentication, PostgreS
 - RESTful API for todo management
 - JWT-based authentication
 - PostgreSQL database with Alembic migrations
-- Redis-based rate limiting with tier support
+- Redis-based rate limiting
 - Comprehensive test suite
 - Docker deployment ready
 - OpenAPI/Swagger documentation
@@ -35,26 +35,31 @@ Authorization: Bearer <your-jwt-token>
 
 ## Rate Limiting
 
-The API implements comprehensive rate limiting with tier-based support. For detailed information, see the [Rate Limiting Guide](docs/RATE-LIMITING.md).
+The API implements rate limiting to prevent abuse and ensure fair usage.
 
-### Quick Overview
-- **Per-user rate limiting** using JWT tokens (falls back to IP address)
-- **Redis-backed** with in-memory fallback
-- **Tier support** for basic, premium, and admin users
-- **Environment-based configuration**
+### Current Limits
 
-### Default Limits
-- **Todo operations**: 30-100 requests/minute depending on operation
-- **Authentication**: 5 requests/minute for login, 10/hour for registration
-- **Categories/Tags**: 20-100 requests/minute
+All authenticated users have the following limits:
 
-### Rate Limit Headers
+| Endpoint Category | Limit |
+|------------------|-------|
+| Authentication | 5 requests/minute |
+| Todo Operations | 60 requests/minute |
+| Bulk Operations | 5 requests/minute |
+
+### Configuration
+
+Rate limits can be configured via environment variables:
+
+```bash
+RATE_LIMIT_PER_MINUTE=100
+RATE_LIMIT_TODO_CREATE=30/minute
 ```
-X-RateLimit-Limit: 30/minute
-X-RateLimit-Remaining: 25
-X-RateLimit-Reset: 1704123660
-Retry-After: 45 (only on 429 responses)
-```
+
+For detailed information, see the [Rate Limiting Guide](docs/RATE-LIMITING.md).
+
+**Note**: The API currently uses uniform rate limiting for all users. 
+Tier-based limiting may be implemented in future versions.
 
 ## Endpoints
 

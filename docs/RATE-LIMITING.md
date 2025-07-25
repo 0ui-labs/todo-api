@@ -1,13 +1,12 @@
 # Rate Limiting Documentation
 
-This document describes the rate limiting implementation for the Todo API, including configuration, usage, and customization options.
+This document describes the rate limiting implementation for the Todo API.
 
 ## Table of Contents
 
 - [Overview](#overview)
-- [Default Limits](#default-limits)
+- [Current Limits](#current-limits)
 - [Configuration](#configuration)
-- [Tier-Based Limits](#tier-based-limits)
 - [Response Headers](#response-headers)
 - [Error Responses](#error-responses)
 - [Testing](#testing)
@@ -15,61 +14,58 @@ This document describes the rate limiting implementation for the Todo API, inclu
 
 ## Overview
 
-The Todo API implements comprehensive rate limiting to:
-- Prevent abuse and ensure fair usage
-- Protect against brute force attacks
-- Maintain service availability
-- Support different user tiers
+The API implements rate limiting to prevent abuse and ensure fair usage.
 
 ### Key Features
 
 - **Per-user rate limiting** using JWT tokens (falls back to IP address)
 - **Redis-backed storage** with in-memory fallback
 - **Moving window strategy** for accurate rate tracking
-- **Tier-based limits** for premium users
 - **Environment-based configuration**
 - **Detailed error responses** with retry information
 
-## Default Limits
+All authenticated users have the same rate limits.
+
+## Current Limits
+
+All authenticated users have the following limits:
 
 ### Authentication Endpoints
 
-| Endpoint | Default Limit | Description |
-|----------|--------------|-------------|
+| Endpoint | Limit | Description |
+|----------|-------|-------------|
 | POST /auth/register | 10/hour | Prevent spam registrations |
 | POST /auth/login | 5/minute | Prevent brute force attacks |
-| POST /auth/refresh | 10/minute | Token refresh operations |
-| POST /auth/logout | 10/minute | Logout operations |
 
 ### Todo Endpoints
 
-| Endpoint | Default Limit | Premium Limit | Admin Limit |
-|----------|--------------|---------------|-------------|
-| POST /todos | 30/minute | 60/minute | unlimited |
-| GET /todos | 60/minute | 120/minute | unlimited |
-| GET /todos/{id} | 100/minute | - | - |
-| PUT /todos/{id} | 30/minute | - | - |
-| DELETE /todos/{id} | 20/minute | - | - |
-| POST /todos/bulk | 5/minute | 10/minute | 20/minute |
+| Endpoint | Limit |
+|----------|-------|
+| POST /todos | 30/minute |
+| GET /todos | 60/minute |
+| GET /todos/{id} | 100/minute |
+| PUT /todos/{id} | 30/minute |
+| DELETE /todos/{id} | 20/minute |
+| POST /todos/bulk | 5/minute |
 
 ### Category Endpoints
 
-| Endpoint | Default Limit |
-|----------|--------------|
+| Endpoint | Limit |
+|----------|-------|
 | POST /categories | 20/minute |
 | GET /categories | 60/minute |
-| GET /categories/{id} | 60/minute |
+| GET /categories/{id} | 100/minute |
 | PUT /categories/{id} | 20/minute |
 | DELETE /categories/{id} | 10/minute |
 
 ### Tag Endpoints
 
-| Endpoint | Default Limit |
-|----------|--------------|
-| POST /tags | 50/minute |
-| GET /tags | 100/minute |
-| PUT /tags/{id} | 50/minute |
-| DELETE /tags/{id} | 30/minute |
+| Endpoint | Limit |
+|----------|-------|
+| POST /tags | 30/minute |
+| GET /tags | 60/minute |
+| PUT /tags/{id} | 30/minute |
+| DELETE /tags/{id} | 20/minute |
 
 ## Configuration
 
@@ -77,23 +73,13 @@ The Todo API implements comprehensive rate limiting to:
 
 Rate limits can be configured via environment variables. All settings are optional and will fall back to defaults if not specified.
 
-#### Global Settings
-
 ```bash
 # Enable/disable rate limiting
 RATE_LIMIT_ENABLED=true
 
-# Rate limiting strategy (moving-window, fixed-window)
-RATE_LIMIT_STRATEGY=moving-window
-
 # Default global limits
-RATE_LIMIT_PER_MINUTE=60
+RATE_LIMIT_PER_MINUTE=100
 RATE_LIMIT_PER_HOUR=1000
-
-# Burst configuration
-RATE_LIMIT_BURST_SIZE=10
-RATE_LIMIT_BURST_REFILL_RATE=1
-RATE_LIMIT_BURST_REFILL_PERIOD=1
 ```
 
 #### Endpoint-Specific Limits
@@ -127,23 +113,6 @@ RATE_LIMIT_TAG_UPDATE=50/minute
 RATE_LIMIT_TAG_DELETE=30/minute
 ```
 
-#### Tier-Specific Limits
-
-Format: `RATE_LIMIT_{CATEGORY}_{OPERATION}_{TIER}`
-
-```bash
-# Premium user limits
-RATE_LIMIT_TODO_CREATE_PREMIUM=60/minute
-RATE_LIMIT_TODO_LIST_PREMIUM=120/minute
-RATE_LIMIT_TODO_BULK_PREMIUM=10/minute
-
-# Admin user limits
-RATE_LIMIT_AUTH_REGISTER_ADMIN=unlimited
-RATE_LIMIT_TODO_CREATE_ADMIN=unlimited
-RATE_LIMIT_TODO_LIST_ADMIN=unlimited
-RATE_LIMIT_TODO_BULK_ADMIN=20/minute
-```
-
 ### Redis Configuration
 
 Rate limiting uses Redis for distributed storage:
@@ -154,27 +123,8 @@ REDIS_URL=redis://localhost:6379/1
 
 If Redis is unavailable, the system falls back to in-memory storage.
 
-## Tier-Based Limits
-
-The system supports three user tiers:
-
-1. **Basic** (default) - Standard rate limits
-2. **Premium** - Higher limits for paid users
-3. **Admin** - Highest limits or unlimited access
-
-### Adding Tier Information
-
-To enable tier-based rate limiting, include the `tier` field in JWT tokens:
-
-```python
-# During login/token generation
-payload = {
-    "sub": str(user.id),
-    "tier": user.tier,  # "basic", "premium", or "admin"
-    "exp": expire
-}
-token = jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
-```
+**Note**: The API currently uses uniform rate limiting for all users. 
+Tier-based limiting may be implemented in future versions.
 
 ## Response Headers
 

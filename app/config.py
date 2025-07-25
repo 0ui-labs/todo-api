@@ -68,15 +68,15 @@ class Settings(BaseSettings):
     backend_cors_origins: list[str] = ["http://localhost:3000", "http://localhost:8000"]
 
     # Rate limiting
+    rate_limit_enabled: bool = True
     rate_limit_per_minute: int = 100
     rate_limit_per_hour: int = 1000
+    
+    # Endpoint-specific limits (non-tier)
+    rate_limit_auth_register: str = "10/hour"
+    rate_limit_auth_login: str = "5/minute"
 
-    # Advanced rate limiting settings
-    rate_limit_burst_size: int = 10  # Allow burst of requests
-    rate_limit_strategy: str = "moving-window"  # moving-window or fixed-window
-    rate_limit_key_prefix: str = "todo_api"  # Redis key prefix
-    rate_limit_auth_per_minute: int = 5
-    rate_limit_auth_per_hour: int = 20
+
 
     # Monitoring and observability settings
     otlp_endpoint: str | None = Field(
