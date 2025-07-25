@@ -1,5 +1,5 @@
 """Authentication service layer."""
-from datetime import timedelta
+from datetime import datetime, timedelta
 from uuid import UUID
 
 from sqlalchemy import select
@@ -8,7 +8,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.config import settings
 from app.models.user import User
 from app.monitoring.metrics import users_login_total, users_registered_total
-from app.schemas.user import UserCreate
+from app.schemas.user import UserCreate, UserLogin
+from app.services.exceptions import AccountLockedError, InvalidCredentialsError
+from app.services.login_rate_limit import LoginRateLimitService
 from app.utils.jwt_utils import create_access_token_async as create_access_token
 from app.utils.security import (
     get_password_hash,
@@ -74,6 +76,77 @@ class AuthService:
 
         users_login_total.labels(status="success").inc()
         return user
+
+    async def login_user(self, login_data: UserLogin) -> User:
+        """Handle user login with rate limiting and authentication."""
+        rate_limit_service = LoginRateLimitService()
+
+        try:
+            # Check if user is rate limited
+            check_result = await rate_limit_service.check_rate_limit(
+                login_data.email
+            )
+            is_allowed, locked_until, attempts = check_result
+
+            if not is_allowed and locked_until:
+                # Calculate remaining lockout time
+                remaining_seconds = int(
+                    (locked_until - datetime.utcnow()).total_seconds()
+                )
+
+                raise AccountLockedError(
+                    message="Too many failed login attempts. Account is locked.",
+                    locked_until=locked_until,
+                    remaining_seconds=remaining_seconds,
+                    failed_attempts=attempts
+                )
+
+            # Authenticate user
+            user = await self.authenticate_user(
+                email=login_data.email,
+                password=login_data.password
+            )
+
+            if not user:
+                # Record failed attempt
+                record_result = await rate_limit_service.record_failed_attempt(
+                    login_data.email
+                )
+                attempts, lockout_until = record_result
+                current_attempts = attempts
+
+                if lockout_until:
+                    # Account just got locked
+                    remaining_seconds = int(
+                        (lockout_until - datetime.utcnow()).total_seconds()
+                    )
+                    raise AccountLockedError(
+                        message=(
+                            "Too many failed login attempts. Account is now locked."
+                        ),
+                        locked_until=lockout_until,
+                        remaining_seconds=remaining_seconds,
+                        failed_attempts=current_attempts
+                    )
+                else:
+                    # Regular failed login
+                    remaining_attempts = max(
+                        0, rate_limit_service.max_attempts - current_attempts
+                    )
+                    raise InvalidCredentialsError(
+                        message="Invalid email or password",
+                        remaining_attempts=remaining_attempts,
+                        failed_attempts=current_attempts
+                    )
+
+            # Clear failed attempts on successful login
+            await rate_limit_service.clear_failed_attempts(login_data.email)
+
+            return user
+
+        finally:
+            # Clean up
+            await rate_limit_service.close()
 
     async def create_user_token(self, user_id: UUID) -> tuple[str, int]:
         """Create an access token for a user."""
