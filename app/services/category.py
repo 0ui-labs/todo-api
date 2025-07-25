@@ -37,7 +37,9 @@ class CategoryService:
             return category
         except IntegrityError as e:
             await self.db.rollback()
-            if "uq_user_category_name" in str(e.orig):
+            error_msg = str(e.orig)
+            if ("uq_user_category_name" in error_msg or
+                "UNIQUE constraint failed: categories.user_id, categories.name" in error_msg):
                 raise ValueError("A category with this name already exists") from e
             raise
 
@@ -121,7 +123,9 @@ class CategoryService:
             return category
         except IntegrityError as e:
             await self.db.rollback()
-            if "uq_user_category_name" in str(e.orig):
+            error_msg = str(e.orig)
+            if ("uq_user_category_name" in error_msg or
+                "UNIQUE constraint failed: categories.user_id, categories.name" in error_msg):
                 raise ValueError("A category with this name already exists") from e
             raise
 

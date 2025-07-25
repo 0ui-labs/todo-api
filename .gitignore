@@ -22,3 +22,5 @@ wheels/
 PRPs/code-reviews/*.tmp
 PRPs/code-reviews/*.draft
 **/.DS_Store
+.DS_Store
+tests/.DS_Store

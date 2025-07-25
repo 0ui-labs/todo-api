@@ -38,12 +38,11 @@ class TestCategoryEndpoints:
         """Test creating category with duplicate name."""
         response = await client.post(
             "/api/v1/categories/",
-            json={"name": test_category.name},
+            json={"name": test_category.name, "color": "#FFFFFF"},
             headers=auth_headers
         )
-        # TODO: Should return 400, but currently returns 500 due to
-        # unhandled IntegrityError
-        assert response.status_code == 500
+        assert response.status_code == 409
+        assert "already exists" in response.json()["detail"]
 
     async def test_list_categories(
         self,
