@@ -59,14 +59,6 @@ class TodoUpdate(BaseSchema):
     completed_at: datetime | None = Field(None)
     tag_ids: list[UUID] | None = Field(None, description="List of tag IDs")
 
-    @field_validator("status")
-    @classmethod
-    def validate_completed_at(cls, v: TodoStatus | None, info) -> TodoStatus | None:
-        """Set completed_at when status is set to completed."""
-        if v == TodoStatus.COMPLETED and "completed_at" not in info.data:
-            info.data["completed_at"] = datetime.now()
-        return v
-
 
 class TodoResponse(TodoBase, TimestampMixin):
     """Schema for todo response."""

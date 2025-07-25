@@ -1,5 +1,5 @@
 """Todo service layer for business logic."""
-from datetime import datetime
+from datetime import UTC, datetime
 from uuid import UUID
 
 from sqlalchemy import and_, func, or_, select
@@ -162,12 +162,16 @@ class TodoService:
         # Handle tags separately
         tag_ids = update_data.pop('tag_ids', None)
 
-        # Handle status change to completed
-        if update_data.get("status") == TodoStatus.COMPLETED and not todo.completed_at:
-            update_data["completed_at"] = datetime.now()
-            todos_completed_total.inc()  # Track completion
-        elif update_data.get("status") != TodoStatus.COMPLETED:
-            update_data["completed_at"] = None
+        # Business logic for completed_at timestamp
+        new_status = update_data.get("status")
+        if new_status and new_status != todo.status:
+            if new_status == TodoStatus.COMPLETED:
+                # Status is being changed to 'completed'
+                update_data["completed_at"] = datetime.now(UTC)
+                todos_completed_total.inc()  # Track completion metric
+            elif todo.status == TodoStatus.COMPLETED:
+                # Status is being changed from 'completed' to something else
+                update_data["completed_at"] = None
 
         # Update fields
         for field, value in update_data.items():
@@ -192,7 +196,7 @@ class TodoService:
         if not todo:
             return False
 
-        todo.deleted_at = datetime.now()
+        todo.deleted_at = datetime.now(UTC)
         await self.db.commit()
 
         # Track metric
