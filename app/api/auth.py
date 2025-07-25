@@ -7,8 +7,10 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError
 from redis.exceptions import RedisError
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
+from app.database import get_db
 from app.dependencies import CurrentUser, DatabaseSession
 from app.middleware.rate_limit import RateLimiters
 from app.schemas.user import TokenResponse, UserCreate, UserLogin, UserResponse
@@ -32,19 +34,25 @@ bearer_scheme = HTTPBearer()
 async def register(
     request: Request,
     user_data: UserCreate,
-    db: DatabaseSession,
+    db: AsyncSession = Depends(get_db),
 ) -> UserResponse:
     """Register a new user."""
-    service = AuthService(db)
-
     try:
+        logger.info(f"Registration attempt for email: {user_data.email}")
+        service = AuthService(db)
         user = await service.register_user(user_data)
+        logger.info(f"User registered successfully: {user.email}")
         return UserResponse.model_validate(user)
     except ValueError as e:
+        logger.warning(f"Registration failed - ValueError: {e}")
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail=str(e)
         ) from e
+    except Exception as e:
+        logger.error(f"Registration failed - {type(e).__name__}: {e}", exc_info=True)
+        raise
+
 
 
 @router.post(
@@ -57,7 +65,7 @@ async def register(
 async def login(
     request: Request,
     login_data: UserLogin,
-    db: DatabaseSession,
+    db: AsyncSession = Depends(get_db),
 ) -> TokenResponse:
     """Login user and return access token."""
     auth_service = AuthService(db)
